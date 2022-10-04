@@ -54,8 +54,8 @@ struct host * server = NULL; // to store server details
 int yes = 1; // sued to set the socket
 
 // HELPER FUNCTIONS
-void setHostNameAndIp(struct host * h);
-void sendCommand(int fd, char msg[]);
+int setHostNameAndIp(struct host * h);
+int sendCommand(int fd, char msg[]);
 
 // APPLICATION STARTUP
 void initialize(bool is_server, char * port);
@@ -64,10 +64,10 @@ void initializeClient();
 int registerClientLIstener();
 
 // COMMAND EXECUTION
-void exCommand(char command[], int requesting_client_fd);
-void exCommandHost(char command[], int requesting_client_fd);
-void exCommandServer(char command[], int requesting_client_fd);
-void exCommandClient(char command[]);
+int exCommand(char command[], int requesting_client_fd);
+int exCommandHost(char command[], int requesting_client_fd);
+int exCommandServer(char command[], int requesting_client_fd);
+int exCommandClient(char command[]);
 
 // _LIST
 void printLoggedInClients();
@@ -87,7 +87,7 @@ void exitClient();
 
 
 /***  Reference : https://ubmnc.wordpress.com/2010/09/22/on-getting-the-ip-name-of-a-machine-for-chatty/ ***/
-void setHostNameAndIp(struct host * h) {
+int setHostNameAndIp(struct host * h) {
     char myIP[16];
     unsigned int myPort;
     struct sockaddr_in server_addr, my_addr;
@@ -113,7 +113,7 @@ void setHostNameAndIp(struct host * h) {
     // Storing my IP and Address in myHost
     memcpy(h->ip, myIP, sizeof(h->ip));
     memcpy(h->hostname, he->h_name, sizeof(h->hostname));
-    return;
+    return 1;
 }
 
 //initialize the host
@@ -130,11 +130,12 @@ void initialize(bool is_server, char * port) {
 }
 
 // sending message to and fro local host
-void sendCommand(int fd, char msg[]) {
+int sendCommand(int fd, char msg[]) {
     int rv;
     if (rv = send(fd, msg, strlen(msg) + 1, 0) == -1) {
         // printf("ERROR")
     }
+    return 1;
 }
 
 //initialize the server
@@ -333,7 +334,7 @@ int registerClientLIstener() {
 }
 
 /***  EXECUTE COMMANDS ***/
-void exCommand(char command[], int requesting_client_fd) {
+int exCommand(char command[], int requesting_client_fd) {
     exCommandHost(command, requesting_client_fd);
     if (myhost -> is_server) {
         exCommandServer(command, requesting_client_fd);
@@ -341,10 +342,11 @@ void exCommand(char command[], int requesting_client_fd) {
         exCommandClient(command);
     }
     fflush(stdout);
+    return 1;
 }
 
 /***  EXECUTE HOST COMMANDS (COMMAND SHELL COMMANDS) ***/
-void exCommandHost(char command[], int requesting_client_fd) {
+int exCommandHost(char command[], int requesting_client_fd) {
     if (strstr(command, "AUTHOR") != NULL) {
         printAuthor("skumar45");
     } else if (strstr(command, "IP") != NULL) {
@@ -353,10 +355,11 @@ void exCommandHost(char command[], int requesting_client_fd) {
         displayPort(myhost -> port);
     }
     fflush(stdout);
+    return 1;
 }
 
 /***  EXECUTE SERVER COMMANDS ***/
-void exCommandServer(char command[], int requesting_client_fd) {
+int exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "LIST") != NULL) {
         printLoggedInClients();
     } else if (strstr(command, "LOGIN") != NULL) {
@@ -369,10 +372,11 @@ void exCommandServer(char command[], int requesting_client_fd) {
         exitServer(requesting_client_fd);
     }
     fflush(stdout);
+    return 1;
 }
 
 /***  EXECUTE CLIENT COMMANDS ***/
-void exCommandClient(char command[]) {
+int exCommandClient(char command[]) {
     if (strstr(command, "LIST") != NULL) {
         if (myhost -> is_logged_in) {
             printLoggedInClients();
@@ -419,6 +423,7 @@ void exCommandClient(char command[]) {
         exitClient();
     }
     fflush(stdout);
+    return 1;
 }
 
 /***  PRINT LIST OF CLIENTS (_LIST COMMAND) ***/
@@ -670,7 +675,7 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     sendCommand(requesting_client_fd, client_return_msg);
 }
 
-/** REFRESH LIST OF CLIENTS **/
+// refreshing the client list
 void clientRefreshClientList(char clientListString[]) {
     char * received = strstr(clientListString, "RECEIVE");
     int rcvi = received - clientListString, cmdi = 0;
@@ -726,7 +731,7 @@ void clientRefreshClientList(char clientListString[]) {
     }
 }
 
-/** SERVER HANDLE REFRESH REQUEST FROM CLIENTS **/
+//server handling the request to refresh the client
 void serverHandleRefresh(int requesting_client_fd) {
     char clientListString[dataSizeMaxBg] = "REFRESHRESPONSE NOTFIRST\n";
     struct host * temp = clients;
@@ -742,7 +747,7 @@ void serverHandleRefresh(int requesting_client_fd) {
     sendCommand(requesting_client_fd, clientListString);
 }
 
-/** CLIENT EXIT **/
+//exiting the client
 void exitClient() {
     sendCommand(server -> fd, "EXIT");
     cse4589_print_and_log("[EXIT:SUCCESS]\n");
@@ -750,7 +755,7 @@ void exitClient() {
     exit(0);
 }
 
-/** SERVER HANDLE EXIT REQUEST FROM CLIENT **/
+//server handling the request too exit the client
 void exitServer(int requesting_client_fd) {
     struct host * temp = clients;
     if (temp -> fd == requesting_client_fd) {
