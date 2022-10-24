@@ -55,7 +55,7 @@ int yes = 1; // sued to set the socket
 
 // HELPER FUNCTIONS
 int setHostNameAndIp(struct host * h);
-int sendCommand(int fd, char msg[]);
+void sendCommand(int fd, char msg[]);
 
 // APPLICATION STARTUP
 void initialize(bool is_server, char * port);
@@ -64,10 +64,10 @@ void initializeClient();
 int registerClientLIstener();
 
 // COMMAND EXECUTION
-int exCommand(char command[], int requesting_client_fd);
-int exCommandHost(char command[], int requesting_client_fd);
-int exCommandServer(char command[], int requesting_client_fd);
-int exCommandClient(char command[]);
+void exCommand(char command[], int requesting_client_fd);
+void exCommandHost(char command[], int requesting_client_fd);
+void exCommandServer(char command[], int requesting_client_fd);
+void exCommandClient(char command[]);
 
 // _LIST
 void printLoggedInClients();
@@ -142,7 +142,6 @@ void sendCommand(int fd, char msg[]) {
     if (rv = send(fd, msg, strlen(msg) + 1, 0) == -1) {
         // printf("ERROR")
     }
-    return 1;
 }
 
 //initialize the server
@@ -219,7 +218,6 @@ void initializeServer() {
 
                     if (new_client_fd != -1) {
                         // registering new client
-                        new_client = malloc(sizeof(struct host));
                         clientNew = malloc(sizeof(struct host));
                         FD_SET(new_client_fd, & master); // add to master set
                         if (new_client_fd > fdmax) { // keep track of the max
@@ -336,6 +334,7 @@ int registerClientLIstener() {
 }
 
 /***  EXECUTE COMMANDS ***/
+void exCommand(char command[], int requesting_client_fd){
     exCommandHost(command, requesting_client_fd);
     if (myhost -> is_server) {
         exCommandServer(command, requesting_client_fd);
@@ -343,7 +342,6 @@ int registerClientLIstener() {
         exCommandClient(command);
     }
     fflush(stdout);
-    return 1;
 }
 
 /***  executing all the commands for host ***/
@@ -356,7 +354,6 @@ void exCommandHost(char command[], int requesting_client_fd) {
         displayPort(myhost -> port);
     }
     fflush(stdout);
-    return 1;
 }
 
 /***  executing all the commands for server ***/
@@ -373,7 +370,6 @@ void exCommandServer(char command[], int requesting_client_fd) {
         exitServer(requesting_client_fd);
     }
     fflush(stdout);
-    return 1;
 }
 
 /*** executing all the commands for clients ***/
@@ -424,7 +420,6 @@ void exCommandClient(char command[]) {
         exitClient();
     }
     fflush(stdout);
-    return 1;
 }
 
 /***  display all the logged in clients ***/
