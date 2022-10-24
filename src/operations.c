@@ -207,7 +207,6 @@ void initializeServer() {
         if (select(fdmax + 1, & read_fds, NULL, NULL, NULL) == -1) {
             exit(EXIT_FAILURE);
         }
-
         // looking for data to read
         for (fd = 0; fd <= fdmax; fd++) {
             if (FD_ISSET(fd, & read_fds)) {
