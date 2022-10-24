@@ -531,7 +531,7 @@ void loginClient(char server_ip[], char server_port[]) {
     if (server == NULL) {
         struct sockaddr_in sa;
         int result = inet_pton(AF_INET, server_ip, & (sa.sin_addr));
-        if (!isIpValid || connectClientServer(server_ip, server_port) == 0) {
+        if (result==0 || connectClientServer(server_ip, server_port) == 0) {
             cse4589_print_and_log("[LOGIN:ERROR]\n");
             cse4589_print_and_log("[LOGIN:END]\n");
             return;
