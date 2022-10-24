@@ -85,6 +85,12 @@ void serverHandleRefresh(int requesting_client_fd);
 void exitServer(int requesting_client_fd);
 void exitClient();
 
+/*** check if the ip is valid***/
+bool isIpValid(char ip[dataSizeMax]) {
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, ip, & (sa.sin_addr));
+    return result != 0;
+}
 
 /***  Reference : https://ubmnc.wordpress.com/2010/09/22/on-getting-the-ip-name-of-a-machine-for-chatty/ ***/
 int setHostNameAndIp(struct host * h) {
@@ -116,6 +122,7 @@ int setHostNameAndIp(struct host * h) {
     return 1;
 }
 
+
 //initialize the host
 void initialize(bool is_server, char * port) {
     myhost = malloc(sizeof(struct host));
@@ -129,8 +136,8 @@ void initialize(bool is_server, char * port) {
     }
 }
 
-// sending message to and fro local host
-int sendCommand(int fd, char msg[]) {
+/** handling message to and from server **/
+void sendCommand(int fd, char msg[]) {
     int rv;
     if (rv = send(fd, msg, strlen(msg) + 1, 0) == -1) {
         // printf("ERROR")
@@ -142,8 +149,7 @@ int sendCommand(int fd, char msg[]) {
 void initializeServer() {
     int listener = 0, error;
     struct addrinfo hints, * localhost_ai, * temp_ai;
-
-    // create a socket and bind
+    // creating a socket and binding
     memset( & hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -165,8 +171,7 @@ void initializeServer() {
         }
         break;
     }
-
-    // exiting if failure
+    // exiting
     if (temp_ai == NULL) {
         exit(EXIT_FAILURE);
     }
@@ -180,22 +185,21 @@ void initializeServer() {
     myhost -> fd = listener;
 
     freeaddrinfo(localhost_ai);
-
     // add the listener fd to master fd
     fd_set master; 
     fd_set read_fds; //temporary file descriptor
     FD_ZERO( & master); // clear the master and temp sets
     FD_ZERO( & read_fds);
-    FD_SET(listener, & master); // Add listener to the master list
-    FD_SET(STDIN, & master); // Add STDIN to the master list
-    int fdmax = listener > STDIN ? listener : STDIN; // maximum file descriptor number. initialised to listener    
-    // variable initialisations
-    int new_client_fd; // newly accept()ed socket descriptor
-    struct sockaddr_storage new_client_addr; // client address
-    socklen_t addrlen; // address length
-    char data_buffer[dataSizeMaxBg]; // buffer for client data
-    int data_buffer_bytes; // holds number of bytes received and stored in data_buffer
-    char newClientIP[INET6_ADDRSTRLEN]; // holds the ip of the new client
+    FD_SET(listener, & master);
+    FD_SET(STDIN, & master); 
+    int fdmax = listener > STDIN ? listener : STDIN;   
+    //  initialising variables
+    int new_client_fd; 
+    struct sockaddr_storage new_client_addr; 
+    socklen_t addrlen;
+    char data_buffer[dataSizeMaxBg];
+    int data_buffer_bytes; 
+    char newClientIP[INET6_ADDRSTRLEN]; 
     int fd;
 
     // main loop
@@ -205,18 +209,17 @@ void initializeServer() {
             exit(EXIT_FAILURE);
         }
 
-        // run through the existing connections looking for data to read
+        // looking for data to read
         for (fd = 0; fd <= fdmax; fd++) {
             if (FD_ISSET(fd, & read_fds)) {
-                // if fd == listener, a new connection has come in.
+                // handling new connection request
                 if (fd == listener) {
                     addrlen = sizeof new_client_addr;
                     new_client_fd = accept(listener, (struct sockaddr * ) & new_client_addr, & addrlen);
 
                     if (new_client_fd != -1) {
-                        // We register the new client onto our system here.
-                        // We store the new client details here. We will assign the values later when the 
-                        // client sends more information about itself like the hostname
+                        // registering new client
+                        new_client = malloc(sizeof(struct host));
                         clientNew = malloc(sizeof(struct host));
                         FD_SET(new_client_fd, & master); // add to master set
                         if (new_client_fd > fdmax) { // keep track of the max
@@ -275,12 +278,11 @@ void initializeServer() {
     return;
 }
 
-/***  CLIENT INITIALISATION ***/
+/***  initialize the client ***/
 void initializeClient() {
-    // TODO: modularise
     registerClientLIstener();
     while (true) {
-        // handle data from standard input
+        // handling input
         char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
         memset(command, '\0', dataSizeMaxBg);
         if (fgets(command, dataSizeMaxBg, stdin) != NULL) {
@@ -289,12 +291,12 @@ void initializeClient() {
     }
 }
 
-/***  CLIENT LISTENER INITIALISATION ***/
+/*** initialize client listener ***/
 int registerClientLIstener() {
     int listener = 0, error;
     struct addrinfo hints, * localhost_ai, * temp_ai;
 
-    // get a socket and bind it
+    // create a socket and bind
     memset( & hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -318,12 +320,12 @@ int registerClientLIstener() {
         break;
     }
 
-    // exit if could not bind
+    // exiting
     if (temp_ai == NULL) {
         exit(EXIT_FAILURE);
     }
 
-    // listen
+    // listening
     if (listen(listener, 10) == -1) {
         exit(EXIT_FAILURE);
     }
@@ -334,7 +336,6 @@ int registerClientLIstener() {
 }
 
 /***  EXECUTE COMMANDS ***/
-int exCommand(char command[], int requesting_client_fd) {
     exCommandHost(command, requesting_client_fd);
     if (myhost -> is_server) {
         exCommandServer(command, requesting_client_fd);
@@ -345,8 +346,8 @@ int exCommand(char command[], int requesting_client_fd) {
     return 1;
 }
 
-/***  EXECUTE HOST COMMANDS (COMMAND SHELL COMMANDS) ***/
-int exCommandHost(char command[], int requesting_client_fd) {
+/***  executing all the commands for host ***/
+void exCommandHost(char command[], int requesting_client_fd) {
     if (strstr(command, "AUTHOR") != NULL) {
         printAuthor("skumar45");
     } else if (strstr(command, "IP") != NULL) {
@@ -358,8 +359,8 @@ int exCommandHost(char command[], int requesting_client_fd) {
     return 1;
 }
 
-/***  EXECUTE SERVER COMMANDS ***/
-int exCommandServer(char command[], int requesting_client_fd) {
+/***  executing all the commands for server ***/
+void exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "LIST") != NULL) {
         printLoggedInClients();
     } else if (strstr(command, "LOGIN") != NULL) {
@@ -375,8 +376,8 @@ int exCommandServer(char command[], int requesting_client_fd) {
     return 1;
 }
 
-/***  EXECUTE CLIENT COMMANDS ***/
-int exCommandClient(char command[]) {
+/*** executing all the commands for clients ***/
+void exCommandClient(char command[]) {
     if (strstr(command, "LIST") != NULL) {
         if (myhost -> is_logged_in) {
             printLoggedInClients();
@@ -426,14 +427,14 @@ int exCommandClient(char command[]) {
     return 1;
 }
 
-/***  PRINT LIST OF CLIENTS (_LIST COMMAND) ***/
+/***  display all the logged in clients ***/
 void printLoggedInClients() {
     cse4589_print_and_log("[LIST:SUCCESS]\n");
 
     struct host * temp = clients;
     int id = 1;
     while (temp != NULL) {
-        // SUSPICIOUS FOR REFRESH
+        // refresh
         if (temp -> is_logged_in) {
             cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", id, temp -> hostname, temp -> ip, (temp -> port));
             id = id + 1;
@@ -444,7 +445,7 @@ void printLoggedInClients() {
     cse4589_print_and_log("[LIST:END]\n");
 }
 
-/***  CONNECT TO SERVER FROM CLIENT SIDE ***/
+/*** connect sever and client***/
 int connectClientServer(char server_ip[], char server_port[]) {
     server = malloc(sizeof(struct host));
     memcpy(server -> ip, server_ip, sizeof(server -> ip));
@@ -452,7 +453,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     int server_fd = 0, error;
     struct addrinfo hints, * server_ai, * temp_ai;
 
-    // get a socket and bind it
+    // create a socket and bind
     memset( & hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -475,7 +476,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
         break;
     }
 
-    // exit if could not bind
+    // exiting if unsuccessfull bind
     if (temp_ai == NULL) {
         return 0;
     }
@@ -506,12 +507,12 @@ int connectClientServer(char server_ip[], char server_port[]) {
         break;
     }
 
-    // exit if could not bind
+    // exiting
     if (temp_ai == NULL) {
         return 0;
     }
 
-    // listen
+    // listening
     if (listen(listener, 10) == -1) {
         return 0;
     }
@@ -523,11 +524,10 @@ int connectClientServer(char server_ip[], char server_port[]) {
     return 1;
 }
 
-/** LOGIN CLIENT TO SERVER **/
+/** client login **/
 void loginClient(char server_ip[], char server_port[]) {
 
-    // Register the server if it's their first time. Client, will store,
-    // server information
+    // Rgeister if its first time
     if (server_ip == NULL || server_port == NULL) {
         cse4589_print_and_log("[LOGIN:ERROR]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
@@ -549,12 +549,13 @@ void loginClient(char server_ip[], char server_port[]) {
         }
     }
 
+    // myhost login succesfull
+    // client sync with server
     // At this point the myhost has successfully logged in
     // we need to make sure everything reflects this
 
     // The client will send a login message to server with it's details here
     myhost -> is_logged_in = true;
-
     char msg[dataSizeMax * 4];
     sprintf(msg, "LOGIN %s %s %s\n", myhost -> ip, myhost -> port, myhost -> hostname);
     sendCommand(server -> fd, msg);
@@ -621,7 +622,7 @@ void loginClient(char server_ip[], char server_port[]) {
 
 }
 
-/** HANDLE LOGIN ON SERVER SIDE (REGISTER THE CLIENT AND SEND LIST OF CLIENTS BACK TO IT) **/
+/** server handling login and register of client **/
 void loginHandleServer(char client_ip[], char client_port[], char client_hostname[], int requesting_client_fd) {
     char client_return_msg[dataSizeMaxBg] = "REFRESHRESPONSE FIRST\n";
     struct host * temp = clients;
