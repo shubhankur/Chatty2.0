@@ -23,6 +23,7 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 #include "../include/universalMethods.h"
+#include "../include/operations.h"
 
 #define dataSizeMax 500
 #define dataSizeMaxBg 500 * 200
@@ -58,7 +59,6 @@ int setHostNameAndIp(struct host * h);
 void sendCommand(int fd, char msg[]);
 
 // APPLICATION STARTUP
-void initialize(bool is_server, char * port);
 void initializeServer();
 void initializeClient();
 int registerClientLIstener();
