@@ -85,13 +85,6 @@ void serverHandleRefresh(int requesting_client_fd);
 void exitServer(int requesting_client_fd);
 void exitClient();
 
-/*** check if the ip is valid***/
-bool isIpValid(char ip[dataSizeMax]) {
-    struct sockaddr_in sa;
-    int result = inet_pton(AF_INET, ip, & (sa.sin_addr));
-    return result != 0;
-}
-
 /***  Reference : https://ubmnc.wordpress.com/2010/09/22/on-getting-the-ip-name-of-a-machine-for-chatty/ ***/
 int setHostNameAndIp(struct host * h) {
     char myIP[16];
