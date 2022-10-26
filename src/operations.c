@@ -129,7 +129,7 @@ void initialize(bool is_server, char * port) {
     }
 }
 
-/** handling message to and from server **/
+//handling message to and from server
 void sendCommand(int fd, char msg[]) {
     int rv;
     send(fd, msg, strlen(msg) + 1, 0);
