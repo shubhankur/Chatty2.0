@@ -137,7 +137,7 @@ void sendCommand(int fd, char msg[]) {
 
 //initialize the server
 void initializeServer() {
-    int listening = 0, error;
+    int listening = 0;
     struct addrinfo hints, * localhost_ai, * temp_ai;
     // creating a socket and binding
     memset( & hints, 0, sizeof hints);
@@ -280,7 +280,7 @@ void initializeClient() {
 
 /*** initialize client listening ***/
 int registerClientLIstener() {
-    int listening = 0, error;
+    int listening = 0;
     struct addrinfo hints, * localhost_ai, * temp_ai;
 
     // create a socket and bind
@@ -433,7 +433,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     server = malloc(sizeof(struct host));
     memcpy(server -> ip, server_ip, sizeof(server -> ip));
     memcpy(server -> port, server_port, sizeof(server -> port));
-    int server_fd = 0, error;
+    int server_fd = 0;
     struct addrinfo hints, * server_ai, * temp_ai;
 
     // create a socket and bind
@@ -471,7 +471,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     // Initalisze a listening as well to listen for P2P cibbectuibs
     int listening = 0;
     struct addrinfo * localhost_ai;
-    int error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
+    error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
     if (error != 0) {
         return 0;
     }
