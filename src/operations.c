@@ -151,7 +151,7 @@ void initializeServer() {
     inet_pton(AF_INET, myhost->ip, &hints.sin_addr);
     setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
     setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
-    if (bind(listening, &hints, sizeof(hints)) < 0) {
+    if (bind(listening, (struct sockaddr *)&hints, sizeof(hints)) < 0) {
         close(listening);
         exit(EXIT_FAILURE);
     }
