@@ -139,59 +139,33 @@ void sendCommand(int fd, char msg[]) {
 
 //initialize the server
 void initializeServer() {
-    // int listening = 0, error;
-    // struct addrinfo hints, * localhost_ai, * temp_ai;
-    // // creating a socket and binding
-    // memset( & hints, 0, sizeof hints);
-    // hints.ai_family = AF_UNSPEC;
-    // hints.ai_socktype = SOCK_STREAM;
-    // hints.ai_flags = AI_PASSIVE;
-    // if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
-    //     listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
-    //     if (listening == -1) {
-    //         continue;
-    //     }
-    //     setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
-    //     setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
-    //     if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
-    //         close(listening);
-    //         continue;
-    //     }
-    //     break;
-    // }
-    // // exiting
+    int listening = 0, error;
+    int listening = socket(AF_INET, SOCK_STREAM, 0);
+    if (listening == -1)
+    {
+       exit(EXIT_FAILURE);
+    }
+    struct sockaddr_in hints;
+    // creating a socket and binding
+    hints.sin_family = AF_UNSPEC;
+    hints.sin_port = myhost -> port;
+    inet_pton(AF_INET, myhost->ip, &hints.sin_addr);
+    setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
+    setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
+    if (bind(listening, &hints, sizeof(hints)) < 0) {
+        close(listening);
+        exit(EXIT_FAILURE);
+    }
+    // exiting
     // if (temp_ai == NULL) {
     //     exit(EXIT_FAILURE);
     // }
 
-    // // listening
-    // if (listen(listening, 10) == -1) {
-    //     exit(EXIT_FAILURE);
-    // }
+    // listening
+    if (listen(listening, 10) == -1) {
+        exit(EXIT_FAILURE);
+    }
 
-    //Create the socket
-    int listening = socket(AF_INET, SOCK_STREAM, 0);
-    if (listening == -1)
-    {
-        exit(EXIT_FAILURE);
-    }
-    // Bind the ip address and port to a socket
-    struct sockaddr_in hint;
-    hint.sin_family = AF_INET;
-    hint.sin_port = htons(myhost -> port);
-    inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
-    if (bind(listening, &hint, sizeof(hint)) < 0) {
-            close(listening);
-    }
-    //Listen the socket
-    if (listen(listening, 20) == -1) {
-        exit(EXIT_FAILURE);
-    }
-    cse4589_print_and_log("Server set up successfully");
     // assigning to myhost file descriptor
     myhost -> fd = listening;
     // add the listening fd to master fd
