@@ -139,7 +139,6 @@ void sendCommand(int fd, char msg[]) {
 
 //initialize the server
 void initializeServer() {
-    int listening = 0, error;
     int listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == -1)
     {
