@@ -144,7 +144,8 @@ void initializeServer() {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
+    int error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
+    if (error != 0) {
         exit(EXIT_FAILURE);
     }
     temp_ai = localhost_ai;
@@ -287,11 +288,10 @@ int registerClientLIstener() {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-
-    if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
+    int error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
+    if (error != 0) {
         exit(EXIT_FAILURE);
     }
-
     for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (listening < 0) {
@@ -441,10 +441,10 @@ int connectClientServer(char server_ip[], char server_port[]) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    if (error = getaddrinfo(server -> ip, server -> port, & hints, & server_ai) != 0) {
+    int error = getaddrinfo(server -> ip, server -> port, & hints, & server_ai);
+    if (error != 0) {
         return 0;
     }
-
     for (temp_ai = server_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
         server_fd = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (server_fd < 0) {
@@ -471,10 +471,10 @@ int connectClientServer(char server_ip[], char server_port[]) {
     // Initalisze a listening as well to listen for P2P cibbectuibs
     int listening = 0;
     struct addrinfo * localhost_ai;
-    if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
+    int error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
+    if (error != 0) {
         return 0;
     }
-
     for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (listening < 0) {
