@@ -184,27 +184,35 @@ void initializeServer() {
     char data_buffer[dataSizeMaxBg];
     int dataRcvd; 
     char newClientIP[INET6_ADDRSTRLEN]; 
-    int fd;
     // add the listening fd to master fd
     fd_set master; 
-    fd_set read_fds; //temporary file descriptor
     FD_ZERO( & master); // clear the master and temp sets
-    FD_ZERO( & read_fds);
     FD_SET(listening, & master);
     FD_SET(STDIN, & master); 
     int fdmax = listening > STDIN ? listening : STDIN;   
 
     // main loop
     while (1) {
-        read_fds = master; // make a copy of master set
-        if (select(fdmax + 1, & read_fds, NULL, NULL, NULL) == -1) {
+        fd_set cp_master = master; // make a copy of master set
+        int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o i sync
+        if (socketCount == -1) {
             exit(EXIT_FAILURE);
         }
         // looking for data to read
-        for (fd = 0; fd <= fdmax; fd++) {
-            if (FD_ISSET(fd, & read_fds)) {
+        int fd = 0;
+        while(fd <= fdmax) {
+            if (FD_ISSET(fd, & cp_master)) {
                 // handling new connection request
-                if (fd == listening) {
+                if (fd == STDIN) {
+                    // handle data from standard input
+                    char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
+                    memset(command, '\0', dataSizeMaxBg);
+                    if (fgets(command, dataSizeMaxBg - 1, stdin) == NULL) { // -1 because of new line
+                    } else {
+                        exCommand(command, fd);
+                    }
+                    fflush(stdout);
+                } else if (fd == listening) {
                     addrlen = sizeof newClientAddr;
                     clientNewFd = accept(listening, (struct sockaddr * ) & newClientAddr, & addrlen);
                     if (clientNewFd != -1) {
@@ -238,16 +246,7 @@ void initializeServer() {
                         clientNew -> next_host = NULL;
                     }
                     fflush(stdout);
-                } else if (fd == STDIN) {
-                    // handle data from standard input
-                    char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
-                    memset(command, '\0', dataSizeMaxBg);
-                    if (fgets(command, dataSizeMaxBg - 1, stdin) == NULL) { // -1 because of new line
-                    } else {
-                        exCommand(command, fd);
-                    }
-                    fflush(stdout);
-                } else {
+                }  else {
                     // handle data from a client
                     dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
                     if (dataRcvd <= 0) {
@@ -259,6 +258,7 @@ void initializeServer() {
                     fflush(stdout);
                 }
             }
+            fd++;
         }
     }
     return;
@@ -545,9 +545,9 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // Now we have a server_fd. We add it to he master list of fds along with stdin.
     fd_set master; // master file descriptor list
-    fd_set read_fds; // temp file descriptor list for select()
+    fd_set cp_master; // temp file descriptor list for select()
     FD_ZERO( & master); // clear the master and temp sets
-    FD_ZERO( & read_fds);
+    FD_ZERO( & cp_master);
     FD_SET(server -> fd, & master); // Add server->fd to the master list
     FD_SET(STDIN, & master); // Add STDIN to the master list
     FD_SET(myhost -> fd, & master);
@@ -562,14 +562,14 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // main loop
     while (myhost -> is_logged_in) {
-        read_fds = master; // make a copy of master set
-        if (select(fdmax + 1, & read_fds, NULL, NULL, NULL) == -1) {
+        cp_master = master; // make a copy of master set
+        if (select(fdmax + 1, & cp_master, NULL, NULL, NULL) == -1) {
             exit(EXIT_FAILURE);
         }
 
         // run through the existing connections looking for data to read
         for (fd = 0; fd <= fdmax; fd++) {
-            if (FD_ISSET(fd, & read_fds)) {
+            if (FD_ISSET(fd, & cp_master)) {
                 // if fd == listening, a new connection has come in.
 
                 if (fd == server -> fd) {
