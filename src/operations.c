@@ -207,7 +207,6 @@ void initializeServer() {
                 if (fd == listening) {
                     addrlen = sizeof newClientAddr;
                     clientNewFd = accept(listening, (struct sockaddr * ) & newClientAddr, & addrlen);
-
                     if (clientNewFd != -1) {
                         // registering new client
                         clientNew = malloc(sizeof(struct host));
