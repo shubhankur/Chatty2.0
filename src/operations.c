@@ -132,9 +132,7 @@ void initialize(bool is_server, char * port) {
 /** handling message to and from server **/
 void sendCommand(int fd, char msg[]) {
     int rv;
-    if (rv = send(fd, msg, strlen(msg) + 1, 0) == -1) {
-        // printf("ERROR")
-    }
+    send(fd, msg, strlen(msg) + 1, 0);
 }
 
 //initialize the server
@@ -171,7 +169,7 @@ void initializeServer() {
     }
 
     // listening
-    if (listen(listening, 10) == -1) {
+    if (listen(listening, 20) == -1) {
         exit(EXIT_FAILURE);
     }
 
@@ -179,6 +177,14 @@ void initializeServer() {
     myhost -> fd = listening;
 
     freeaddrinfo(localhost_ai);
+    //  initialising variables
+    int clientNewFd; 
+    struct sockaddr_storage newClientAddr; 
+    socklen_t addrlen;
+    char data_buffer[dataSizeMaxBg];
+    int dataRcvd; 
+    char newClientIP[INET6_ADDRSTRLEN]; 
+    int fd;
     // add the listening fd to master fd
     fd_set master; 
     fd_set read_fds; //temporary file descriptor
@@ -187,14 +193,6 @@ void initializeServer() {
     FD_SET(listening, & master);
     FD_SET(STDIN, & master); 
     int fdmax = listening > STDIN ? listening : STDIN;   
-    //  initialising variables
-    int new_client_fd; 
-    struct sockaddr_storage new_client_addr; 
-    socklen_t addrlen;
-    char data_buffer[dataSizeMaxBg];
-    int data_buffer_bytes; 
-    char newClientIP[INET6_ADDRSTRLEN]; 
-    int fd;
 
     // main loop
     while (1) {
@@ -207,22 +205,22 @@ void initializeServer() {
             if (FD_ISSET(fd, & read_fds)) {
                 // handling new connection request
                 if (fd == listening) {
-                    addrlen = sizeof new_client_addr;
-                    new_client_fd = accept(listening, (struct sockaddr * ) & new_client_addr, & addrlen);
+                    addrlen = sizeof newClientAddr;
+                    clientNewFd = accept(listening, (struct sockaddr * ) & newClientAddr, & addrlen);
 
-                    if (new_client_fd != -1) {
+                    if (clientNewFd != -1) {
                         // registering new client
                         clientNew = malloc(sizeof(struct host));
-                        FD_SET(new_client_fd, & master); // add to master set
-                        if (new_client_fd > fdmax) { // keep track of the max
-                            fdmax = new_client_fd;
+                        FD_SET(clientNewFd, & master); // add to master set
+                        if (clientNewFd > fdmax) { // keep track of the max
+                            fdmax = clientNewFd;
                         }
-                        struct sockaddr * sa = (struct sockaddr * ) & new_client_addr;
+                        struct sockaddr * sa = (struct sockaddr * ) & newClientAddr;
                         if (sa -> sa_family == AF_INET) {
                             memcpy(clientNew -> ip,
                             inet_ntop(
-                                new_client_addr.ss_family,
-                                &(((struct sockaddr_in * ) sa) -> sin_addr), // even though new_client_addr is of type sockaddr_storage, they can be cast into each other. Refer beej docs.
+                                newClientAddr.ss_family,
+                                &(((struct sockaddr_in * ) sa) -> sin_addr), // even though newClientAddr is of type sockaddr_storage, they can be cast into each other. Refer beej docs.
                                 newClientIP,
                                 INET6_ADDRSTRLEN
                             ), sizeof(clientNew -> ip));
@@ -230,13 +228,13 @@ void initializeServer() {
                         else{
                             memcpy(clientNew -> ip,
                             inet_ntop(
-                                new_client_addr.ss_family,
-                                &(((struct sockaddr_in6 * ) sa) -> sin6_addr), // even though new_client_addr is of type sockaddr_storage, they can be cast into each other. Refer beej docs.
+                                newClientAddr.ss_family,
+                                &(((struct sockaddr_in6 * ) sa) -> sin6_addr), // even though newClientAddr is of type sockaddr_storage, they can be cast into each other. Refer beej docs.
                                 newClientIP,
                                 INET6_ADDRSTRLEN
                             ), sizeof(clientNew -> ip));
                         }
-                        clientNew -> fd = new_client_fd;
+                        clientNew -> fd = clientNewFd;
                         clientNew -> is_logged_in = true;
                         clientNew -> next_host = NULL;
                     }
@@ -252,11 +250,8 @@ void initializeServer() {
                     fflush(stdout);
                 } else {
                     // handle data from a client
-                    data_buffer_bytes = recv(fd, data_buffer, sizeof data_buffer, 0);
-                    if (data_buffer_bytes == 0) {
-                        close(fd); // Close the connection
-                        FD_CLR(fd, & master); // Remove the fd from master set
-                    } else if (data_buffer_bytes == -1) {
+                    dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
+                    if (dataRcvd <= 0) {
                         close(fd); // Close the connection
                         FD_CLR(fd, & master); // Remove the fd from master set
                     } else {
@@ -561,7 +556,7 @@ void loginClient(char server_ip[], char server_port[]) {
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
     char data_buffer[dataSizeMaxBg]; // buffer for client data
-    int data_buffer_bytes; // holds number of bytes received and stored in data_buffer
+    int dataRcvd; // holds number of bytes received and stored in data_buffer
     int fd;
     struct sockaddr_storage new_peer_addr; // client address
     socklen_t addrlen = sizeof new_peer_addr;
@@ -580,11 +575,11 @@ void loginClient(char server_ip[], char server_port[]) {
 
                 if (fd == server -> fd) {
                     // handle data from the server
-                    data_buffer_bytes = recv(fd, data_buffer, sizeof data_buffer, 0);
-                    if (data_buffer_bytes == 0) {
+                    dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
+                    if (dataRcvd == 0) {
                         close(fd); // Close the connection
                         FD_CLR(fd, & master); // Remove the fd from master set
-                    } else if (data_buffer_bytes == -1) {
+                    } else if (dataRcvd == -1) {
                         close(fd); // Close the connection
                         FD_CLR(fd, & master); // Remove the fd from master set
                     } else {
