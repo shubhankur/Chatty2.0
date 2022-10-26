@@ -139,42 +139,52 @@ void sendCommand(int fd, char msg[]) {
 
 //initialize the server
 void initializeServer() {
-    int listening = socket(AF_INET, SOCK_STREAM, 0);
-    if (listening == -1)
-    {
-       exit(EXIT_FAILURE);
-    }
-    struct sockaddr_in hints;
+    int listener = 0, error;
+    struct addrinfo hints, * localhost_ai, * temp_ai;
     // creating a socket and binding
-    hints.sin_family = AF_UNSPEC;
-    hints.sin_port = myhost -> port;
-    inet_pton(AF_INET, myhost->ip, &hints.sin_addr);
-    setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
-    setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
-    if (bind(listening, (struct sockaddr *)&hints, sizeof(hints)) < 0) {
-        close(listening);
+    memset( & hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+    if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
         exit(EXIT_FAILURE);
     }
+
+    for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
+        listener = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
+        if (listener < 0) {
+            continue;
+        }
+        setsockopt(listener, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
+        setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
+        if (bind(listener, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
+            close(listener);
+            continue;
+        }
+        break;
+    }
     // exiting
-    // if (temp_ai == NULL) {
-    //     exit(EXIT_FAILURE);
-    // }
+    if (temp_ai == NULL) {
+        exit(EXIT_FAILURE);
+    }
 
     // listening
-    if (listen(listening, 10) == -1) {
+    if (listen(listener, 10) == -1) {
         exit(EXIT_FAILURE);
     }
 
     // assigning to myhost file descriptor
-    myhost -> fd = listening;
-    // add the listening fd to master fd
+    myhost -> fd = listener;
+
+    freeaddrinfo(localhost_ai);
+    // add the listener fd to master fd
     fd_set master; 
     fd_set read_fds; //temporary file descriptor
     FD_ZERO( & master); // clear the master and temp sets
     FD_ZERO( & read_fds);
-    FD_SET(listening, & master);
+    FD_SET(listener, & master);
     FD_SET(STDIN, & master); 
-    int fdmax = listening > STDIN ? listening : STDIN;   
+    int fdmax = listener > STDIN ? listener : STDIN;   
     //  initialising variables
     int new_client_fd; 
     struct sockaddr_storage new_client_addr; 
@@ -194,9 +204,9 @@ void initializeServer() {
         for (fd = 0; fd <= fdmax; fd++) {
             if (FD_ISSET(fd, & read_fds)) {
                 // handling new connection request
-                if (fd == listening) {
+                if (fd == listener) {
                     addrlen = sizeof new_client_addr;
-                    new_client_fd = accept(listening, (struct sockaddr * ) & new_client_addr, & addrlen);
+                    new_client_fd = accept(listener, (struct sockaddr * ) & new_client_addr, & addrlen);
 
                     if (new_client_fd != -1) {
                         // registering new client
@@ -271,9 +281,9 @@ void initializeClient() {
     }
 }
 
-/*** initialize client listening ***/
+/*** initialize client listener ***/
 int registerClientLIstener() {
-    int listening = 0, error;
+    int listener = 0, error;
     struct addrinfo hints, * localhost_ai, * temp_ai;
 
     // create a socket and bind
@@ -287,14 +297,14 @@ int registerClientLIstener() {
     }
 
     for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
-        listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
-        if (listening < 0) {
+        listener = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
+        if (listener < 0) {
             continue;
         }
-        setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
-        setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
-        if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
-            close(listening);
+        setsockopt(listener, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
+        setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
+        if (bind(listener, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
+            close(listener);
             continue;
         }
         break;
@@ -306,11 +316,11 @@ int registerClientLIstener() {
     }
 
     // listening
-    if (listen(listening, 10) == -1) {
+    if (listen(listener, 10) == -1) {
         exit(EXIT_FAILURE);
     }
 
-    myhost -> fd = listening;
+    myhost -> fd = listener;
 
     freeaddrinfo(localhost_ai);
 }
@@ -462,23 +472,23 @@ int connectClientServer(char server_ip[], char server_port[]) {
 
     freeaddrinfo(server_ai);
 
-    // Initalisze a listening as well to listen for P2P cibbectuibs
-    int listening = 0;
+    // Initalisze a listener as well to listen for P2P cibbectuibs
+    int listener = 0;
     struct addrinfo * localhost_ai;
     if (error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai) != 0) {
         return 0;
     }
 
     for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
-        listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
-        if (listening < 0) {
+        listener = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
+        if (listener < 0) {
             continue;
         }
-        setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
-        setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
+        setsockopt(listener, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
+        setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
 
-        if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
-            close(listening);
+        if (bind(listener, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
+            close(listener);
             continue;
         }
         break;
@@ -490,11 +500,11 @@ int connectClientServer(char server_ip[], char server_port[]) {
     }
 
     // listening
-    if (listen(listening, 10) == -1) {
+    if (listen(listener, 10) == -1) {
         return 0;
     }
 
-    myhost -> fd = listening;
+    myhost -> fd = listener;
 
     freeaddrinfo(localhost_ai);
 
@@ -545,7 +555,7 @@ void loginClient(char server_ip[], char server_port[]) {
     FD_SET(server -> fd, & master); // Add server->fd to the master list
     FD_SET(STDIN, & master); // Add STDIN to the master list
     FD_SET(myhost -> fd, & master);
-    int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listening    
+    int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listener    
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
     char data_buffer[dataSizeMaxBg]; // buffer for client data
@@ -564,7 +574,7 @@ void loginClient(char server_ip[], char server_port[]) {
         // run through the existing connections looking for data to read
         for (fd = 0; fd <= fdmax; fd++) {
             if (FD_ISSET(fd, & read_fds)) {
-                // if fd == listening, a new connection has come in.
+                // if fd == listener, a new connection has come in.
 
                 if (fd == server -> fd) {
                     // handle data from the server
