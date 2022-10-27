@@ -178,12 +178,11 @@ void initializeServer() {
     myhost -> fd = listening;
 
     freeaddrinfo(localhost_ai);
+
     //  initialising variables
     int clientNewFd; 
     struct sockaddr_storage newClientAddr; 
     socklen_t addrlen;
-    char data_buffer[dataSizeMaxBg];
-    int dataRcvd; 
     char newClientIP[INET6_ADDRSTRLEN]; 
     // add the listening fd to master fd
     fd_set master; 
@@ -249,12 +248,13 @@ void initializeServer() {
                     fflush(stdout);
                 }  else {
                     // handle data from a client
-                    dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
+                    char buf[4096];
+                    int dataRcvd = recv(fd, buf, sizeof buf, 0);
                     if (dataRcvd <= 0) {
                         close(fd); // Close the connection
                         FD_CLR(fd, & master); // Remove the fd from master set
                     } else {
-                        exCommand(data_buffer, fd);
+                        exCommand(buf, fd);
                     }
                     fflush(stdout);
                 }
@@ -332,7 +332,7 @@ void exCommand(char command[], int requesting_client_fd){
     fflush(stdout);
 }
 
-/***  executing all the commands for host ***/
+//executing universal commands
 void exCommandHost(char command[], int requesting_client_fd) {
     if (strstr(command, "AUTHOR") != NULL) {
         printAuthor("skumar45");
@@ -344,7 +344,7 @@ void exCommandHost(char command[], int requesting_client_fd) {
     fflush(stdout);
 }
 
-/***  executing all the commands for server ***/
+//executing server commands
 void exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "LIST") != NULL) {
         printLoggedInClients();
