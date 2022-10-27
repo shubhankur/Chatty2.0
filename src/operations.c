@@ -61,6 +61,8 @@ int yes = 1; // sued to set the socket
 // HELPER FUNCTIONS
 int setHostNameAndIp(struct host * h);
 void sendCommand(int fd, char msg[]);
+void host__send_command(int fd, char msg[]);
+
 
 // APPLICATION STARTUP
 void initializeServer();
@@ -493,15 +495,6 @@ void exCommandClient(char command[]) {
         } else {
             cse4589_print_and_log("[REFRESH:ERROR]\n");
             cse4589_print_and_log("[REFRESH:END]\n");
-        }
-    } else if (strstr(command, "SENDFILE") != NULL) {
-        if (myhost -> is_logged_in) {
-            char peer_ip[dataSizeMax], file_name[dataSizeMax];
-            sscanf(command, "SENDFILE %s %s\n", peer_ip, file_name);
-            client__P2P_file_transfer(peer_ip, file_name);
-        } else {
-            cse4589_print_and_log("[SENDFILE:ERROR]\n");
-            cse4589_print_and_log("[SENDFILE:END]\n");
         }
     } else if (strstr(command, "SEND") != NULL) {
         if (myhost -> is_logged_in) {
