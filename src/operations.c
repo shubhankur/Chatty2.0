@@ -13,32 +13,12 @@
 #include "../include/logger.h"
 #include "../include/universalMethods.h"
 #include "../include/operations.h"
+#include "../include/structs.h"
 
 #define dataSizeMax 500
 #define dataSizeMaxBg 500 * 200
 #define STDIN 0
 
-struct message {
-    char text[dataSizeMaxBg];
-    struct host * from_client;
-    struct message * next_message;
-    bool is_broadcast;
-};
-
-struct host {
-    char hostname[dataSizeMax];
-    char ip[dataSizeMax];
-    char port[dataSizeMax];
-    char status[dataSizeMax];
-    int num_msg_sent;
-    int num_msg_rcv;
-    int fd;
-    struct host * blocked;
-    struct host * next_host;
-    bool is_logged_in;
-    bool is_server;
-    struct message * queued_messages;
-};
 
 // INITIALISE GLOBAL VARIABLES
 struct host * clientNew = NULL; //to store new clients
@@ -128,14 +108,13 @@ int setHostNameAndIp(struct host * h) {
     return 1;
 }
 
-
 //initialize the host
-void initialize(bool is_server, char * port) {
+void initialize(bool checkServer, char * port) {
     myhost = malloc(sizeof(struct host));
     memcpy(myhost -> port, port, sizeof(myhost -> port));
-    myhost -> is_server = is_server;
+    myhost -> checkServer = checkServer;
     setHostNameAndIp(myhost);
-    if (is_server) {
+    if (checkServer) {
         initializeServer();
     } else {
         initializeClient();
@@ -255,9 +234,9 @@ void initializeServer() {
                             ), sizeof(clientNew -> ip));
                         }
                         clientNew -> fd = clientNewFd;
-                        clientNew -> num_msg_rcv = 0;
-                        clientNew -> num_msg_sent = 0;
-                        clientNew -> is_logged_in = true;
+                        clientNew -> recvMsgCount = 0;
+                        clientNew -> sentMsgCount = 0;
+                        clientNew -> loggedIn = true;
                         clientNew -> next_host = NULL;
                         clientNew -> blocked = NULL;
                     }
@@ -340,7 +319,7 @@ int registerClientLIstener() {
 /***  EXECUTE COMMANDS ***/
 void exCommand(char command[], int requesting_client_fd){
     exCommandHost(command, requesting_client_fd);
-    if (myhost -> is_server) {
+    if (myhost -> checkServer) {
         exCommandServer(command, requesting_client_fd);
     } else {
         exCommandClient(command);
@@ -421,7 +400,7 @@ void exCommandServer(char command[], int requesting_client_fd) {
 /*** executing all the commands for clients ***/
 void exCommandClient(char command[]) {
     if (strstr(command, "LIST") != NULL) {
-        if (myhost -> is_logged_in) {
+        if (myhost -> loggedIn) {
             printLoggedInClients();
         } else {
             cse4589_print_and_log("[LIST:ERROR]\n");
@@ -434,7 +413,7 @@ void exCommandClient(char command[]) {
         cse4589_print_and_log("[LOGIN:ERROR]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
     }  else if (strstr(command, "SUCCESSLOGOUT") != NULL) {
-        myhost-> is_logged_in = false;
+        myhost-> loggedIn = false;
         cse4589_print_and_log("[LOGOUT:SUCCESS]\n");
         cse4589_print_and_log("[LOGOUT:END]\n");
     } else if (strstr(command, "ERRORLOGOUT") != NULL) {
@@ -481,14 +460,14 @@ void exCommandClient(char command[]) {
     } else if (strstr(command, "REFRESHRESPONSE") != NULL) {
         clientRefreshClientList(command);
     } else if (strstr(command, "REFRESH") != NULL) {
-        if (myhost -> is_logged_in) {
+        if (myhost -> loggedIn) {
             sendCommand(server -> fd, "REFRESH\n");
         } else {
             cse4589_print_and_log("[REFRESH:ERROR]\n");
             cse4589_print_and_log("[REFRESH:END]\n");
         }
     } else if (strstr(command, "SEND") != NULL) {
-        if (myhost -> is_logged_in) {
+        if (myhost -> loggedIn) {
             client__send(command);
         } else {
             cse4589_print_and_log("[SEND:ERROR]\n");
@@ -515,28 +494,28 @@ void exCommandClient(char command[]) {
         message[msgi - 1] = '\0'; // REMOVE THE NEW LINE
         client__handle_receive(client_ip, message);
     } else if (strstr(command, "BROADCAST") != NULL) {
-        if (myhost-> is_logged_in) {
+        if (myhost-> loggedIn) {
             sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[BROADCAST:ERROR]\n");
             cse4589_print_and_log("[BROADCAST:END]\n");
         }
     } else if (strstr(command, "UNBLOCK") != NULL) {
-        if (myhost-> is_logged_in) {
+        if (myhost-> loggedIn) {
             client__block_or_unblock(command, false);
         } else {
             cse4589_print_and_log("[UNBLOCK:ERROR]\n");
             cse4589_print_and_log("[UNBLOCK:END]\n");
         }
     } else if (strstr(command, "BLOCK") != NULL) {
-        if (myhost-> is_logged_in) {
+        if (myhost-> loggedIn) {
             client__block_or_unblock(command, true);
         } else {
             cse4589_print_and_log("[BLOCK:ERROR]\n");
             cse4589_print_and_log("[BLOCK:END]\n");
         }
     } else if (strstr(command, "LOGOUT") != NULL) {
-        if (myhost-> is_logged_in) {
+        if (myhost-> loggedIn) {
             sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[LOGOUT:ERROR]\n");
@@ -556,7 +535,7 @@ void printLoggedInClients() {
     int id = 1;
     while (temp != NULL) {
         // refresh
-        if (temp -> is_logged_in) {
+        if (temp -> loggedIn) {
             cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", id, temp -> hostname, temp -> ip, (temp -> port));
             id = id + 1;
         }
@@ -572,7 +551,7 @@ void server__print_statistics() {
     struct host * temp = clients;
     int id = 1;
     while (temp != NULL) {
-        cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", id, temp -> hostname, temp -> num_msg_sent, temp -> num_msg_rcv, temp -> is_logged_in ? "logged-in" : "logged-out");
+        cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", id, temp -> hostname, temp -> sentMsgCount, temp -> recvMsgCount, temp -> loggedIn ? "logged-in" : "logged-out");
         id = id + 1;
         temp = temp -> next_host;
     }
@@ -689,7 +668,7 @@ void loginClient(char server_ip[], char server_port[]) {
     // we need to make sure everything reflects this
 
     // The client will send a login message to server with it's details here
-    myhost -> is_logged_in = true;
+    myhost -> loggedIn = true;
     char msg[dataSizeMax * 4];
     sprintf(msg, "LOGIN %s %s %s\n", myhost -> ip, myhost -> port, myhost -> hostname);
     sendCommand(server -> fd, msg);
@@ -712,7 +691,7 @@ void loginClient(char server_ip[], char server_port[]) {
     socklen_t addrlen = sizeof new_peer_addr;
 
     // main loop
-    while (myhost -> is_logged_in) {
+    while (myhost -> loggedIn) {
         cp_master = master; // make a copy of master set
         if (select(fdmax + 1, & cp_master, NULL, NULL, NULL) == -1) {
             exit(EXIT_FAILURE);
@@ -787,12 +766,12 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
         }
 
     } else {
-        requesting_client -> is_logged_in = true;
+        requesting_client -> loggedIn = true;
     }
 
     temp = clients;
     while (temp != NULL) {
-        if (temp -> is_logged_in) {
+        if (temp -> loggedIn) {
             char clientString[dataSizeMax * 4];
             sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
             strcat(client_return_msg, clientString);
@@ -805,7 +784,7 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     char receive[dataSizeMax * 3];
 
     while (temp_message != NULL) {
-        requesting_client -> num_msg_rcv++;
+        requesting_client -> recvMsgCount++;
         sprintf(receive, "RECEIVE %s %s    ", temp_message -> from_client -> ip, temp_message -> text);
         strcat(client_return_msg, receive);
 
@@ -862,7 +841,7 @@ void clientRefreshClientList(char clientListString[]) {
             memcpy(clientNew -> port, client_port, sizeof(clientNew -> port));
             memcpy(clientNew -> ip, client_ip, sizeof(clientNew -> ip));
             memcpy(clientNew -> hostname, client_hostname, sizeof(clientNew -> hostname));
-            clientNew -> is_logged_in = true;
+            clientNew -> loggedIn = true;
             clients -> next_host = clientNew;
             clients = clients -> next_host;
         }
@@ -881,7 +860,7 @@ void serverHandleRefresh(int requesting_client_fd) {
     char clientListString[dataSizeMaxBg] = "REFRESHRESPONSE NOTFIRST\n";
     struct host * temp = clients;
     while (temp != NULL) {
-        if (temp -> is_logged_in) {
+        if (temp -> loggedIn) {
             char clientString[dataSizeMax * 4];
             sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
             strcat(clientListString, clientString);
@@ -914,7 +893,7 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         return;
     }
 
-    from_client -> num_msg_sent++;
+    from_client -> sentMsgCount++;
     // CHECK IF SENDER IS BLOCKED (FROM IS BLOCKED BY TO)
 
     bool is_blocked = false;
@@ -936,8 +915,8 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         return;
     }
 
-    if (to_client -> is_logged_in) {
-        to_client -> num_msg_rcv++;
+    if (to_client -> loggedIn) {
+        to_client -> recvMsgCount++;
         sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
         sendCommand(to_client -> fd, receive);
 
@@ -1014,7 +993,7 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
     }
     struct host * to_client = clients;
     int id = 1;
-    from_client -> num_msg_sent++;
+    from_client -> sentMsgCount++;
     while (to_client != NULL) {
         if (to_client -> fd == requesting_client_fd) {
             to_client = to_client -> next_host;
@@ -1039,8 +1018,8 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
 
         char receive[dataSizeMax * 4];
 
-        if (to_client -> is_logged_in) {
-            to_client -> num_msg_rcv++;
+        if (to_client -> loggedIn) {
+            to_client -> recvMsgCount++;
             sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
             sendCommand(to_client -> fd, receive);
         } else {
@@ -1246,7 +1225,7 @@ void server__handle_logout(int requesting_client_fd) {
     while (temp != NULL) {
         if (temp -> fd == requesting_client_fd) {
             sendCommand(requesting_client_fd, "SUCCESSLOGOUT\n");
-            temp -> is_logged_in = false;
+            temp -> loggedIn = false;
             break;
         }
         temp = temp -> next_host;
