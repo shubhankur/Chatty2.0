@@ -61,7 +61,6 @@ int yes = 1; // sued to set the socket
 // HELPER FUNCTIONS
 int setHostNameAndIp(struct host * h);
 void sendCommand(int fd, char msg[]);
-void host__send_command(int fd, char msg[]);
 
 
 // APPLICATION STARTUP
@@ -525,7 +524,7 @@ void exCommandClient(char command[]) {
         client__handle_receive(client_ip, message);
     } else if (strstr(command, "BROADCAST") != NULL) {
         if (myhost-> is_logged_in) {
-            host__send_command(server -> fd, command);
+            sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[BROADCAST:ERROR]\n");
             cse4589_print_and_log("[BROADCAST:END]\n");
@@ -546,7 +545,7 @@ void exCommandClient(char command[]) {
         }
     } else if (strstr(command, "LOGOUT") != NULL) {
         if (myhost-> is_logged_in) {
-            host__send_command(server -> fd, command);
+            sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[LOGOUT:ERROR]\n");
             cse4589_print_and_log("[LOGOUT:END]\n");
@@ -945,19 +944,19 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         }
         temp = temp -> next_host;
     }
-    host__send_command(from_client -> fd, "SUCCESSSEND\n");
+    sendCommand(from_client -> fd, "SUCCESSSEND\n");
     if (is_blocked) {
         cse4589_print_and_log("[RELAYED:SUCCESS]\n");
         cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", from_client -> ip, to_client -> ip, msg);
         cse4589_print_and_log("[RELAYED:END]\n");
-        host__send_command(from_client -> fd, "SUCCESSSEND\n");
+        sendCommand(from_client -> fd, "SUCCESSSEND\n");
         return;
     }
 
     if (to_client -> is_logged_in) {
         to_client -> num_msg_rcv++;
         sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
-        host__send_command(to_client -> fd, receive);
+        sendCommand(to_client -> fd, receive);
 
         // TODO: CHECK IF THIS NEEDS TO BE SENT WHEN BLOCKED
         cse4589_print_and_log("[RELAYED:SUCCESS]\n");
@@ -992,7 +991,9 @@ void client__send(char command[]) {
         ipi += 1;
     }
     client_ip[ipi] = '\0';
-    if (!host__check_valid_ip_addr(client_ip)) {
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, client_ip, & (sa.sin_addr));
+    if (result!=0) {
         cse4589_print_and_log("[SEND:ERROR]\n");
         cse4589_print_and_log("[SEND:END]\n");
         return;
@@ -1000,7 +1001,7 @@ void client__send(char command[]) {
     struct host * temp = clients;
     while (temp != NULL) {
         if (strstr(temp -> ip, client_ip) != NULL) {
-            host__send_command(server -> fd, command);
+            sendCommand(server -> fd, command);
             break;
         }
         temp = temp -> next_host;
@@ -1058,7 +1059,7 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
         if (to_client -> is_logged_in) {
             to_client -> num_msg_rcv++;
             sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
-            host__send_command(to_client -> fd, receive);
+            sendCommand(to_client -> fd, receive);
         } else {
             struct message * new_message = malloc(sizeof(struct message));
             memcpy(new_message -> text, msg, sizeof(new_message -> text));
@@ -1080,7 +1081,7 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
     cse4589_print_and_log("[RELAYED:SUCCESS]\n");
     cse4589_print_and_log("msg from:%s, to:255.255.255.255\n[msg]:%s\n", from_client ->ip, msg);
     cse4589_print_and_log("[RELAYED:END]\n");
-    host__send_command(from_client -> fd, "SUCCESSBROADCAST\n");
+    sendCommand(from_client -> fd, "SUCCESSBROADCAST\n");
 }
 
 /** BLOCK OR UNBLOCK **/
@@ -1128,7 +1129,7 @@ void client__block_or_unblock(char command[], bool is_a_block) {
         } else {
             myhost -> blocked = new_blocked_client;
         }
-        host__send_command(server -> fd, command);
+        sendCommand(server -> fd, command);
     } else if (blocked_client != NULL && blocked_client_2 != NULL && !is_a_block) {
         struct host * temp_blocked = myhost -> blocked;
         if (strstr(blocked_client -> ip, temp_blocked -> ip) != NULL) {
@@ -1143,7 +1144,7 @@ void client__block_or_unblock(char command[], bool is_a_block) {
                 temp_blocked = temp_blocked -> next_host;
             }
         }
-        host__send_command(server -> fd, command);
+        sendCommand(server -> fd, command);
 
     } else {
         if (is_a_block) {
@@ -1202,7 +1203,7 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
                 temp -> next_host = new_blocked_client;
             }
 
-            host__send_command(requesting_client_fd, "SUCCESSBLOCK\n");
+            sendCommand(requesting_client_fd, "SUCCESSBLOCK\n");
         } else {
             struct host * temp_blocked = requesting_client -> blocked;
             if (strstr(temp_blocked ->ip, blocked_client ->ip) != NULL) {
@@ -1217,13 +1218,13 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
                     temp_blocked = temp_blocked -> next_host;
                 }
             }
-            host__send_command(requesting_client_fd, "SUCCESSUNBLOCK\n");
+            sendCommand(requesting_client_fd, "SUCCESSUNBLOCK\n");
         }
     } else {
         if (is_a_block) {
-            host__send_command(requesting_client_fd, "ERRORBLOCK\n");
+            sendCommand(requesting_client_fd, "ERRORBLOCK\n");
         } else {
-            host__send_command(requesting_client_fd, "ERRORUNBLOCK\n");
+            sendCommand(requesting_client_fd, "ERRORUNBLOCK\n");
         }
     }
 }
@@ -1237,7 +1238,9 @@ void server__print_blocked(char blocker_ip_addr[]) {
         }
         temp = temp -> next_host;
     }
-    if (host__check_valid_ip_addr(blocker_ip_addr) && temp) {
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, blocker_ip_addr, & (sa.sin_addr));
+    if (result==0 && temp) {
         cse4589_print_and_log("[BLOCKED:SUCCESS]\n");
         struct host * temp_blocked = clients;
         temp_blocked = temp -> blocked;
@@ -1259,14 +1262,14 @@ void server__handle_logout(int requesting_client_fd) {
     struct host * temp = clients;
     while (temp != NULL) {
         if (temp -> fd == requesting_client_fd) {
-            host__send_command(requesting_client_fd, "SUCCESSLOGOUT\n");
+            sendCommand(requesting_client_fd, "SUCCESSLOGOUT\n");
             temp -> is_logged_in = false;
             break;
         }
         temp = temp -> next_host;
     }
     if (temp == NULL) {
-        host__send_command(requesting_client_fd, "ERRORLOGOUT\n");
+        sendCommand(requesting_client_fd, "ERRORLOGOUT\n");
     }
 }
 
