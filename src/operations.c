@@ -750,12 +750,6 @@ void loginClient(char server_ip[], char server_port[]) {
                     if (fgets(command, dataSizeMaxBg - 1, stdin) != NULL) {
                         exCommand(command, STDIN);
                     }
-                } else if (fd == myhost -> fd) {
-
-                    int new_peer_fd = accept(fd, (struct sockaddr * ) & new_peer_addr, & addrlen);
-                    if (new_peer_fd != -1) {
-                        client__receive_file_from_peer(new_peer_fd);
-                    }
                 }
             }
         }
