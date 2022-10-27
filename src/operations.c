@@ -266,8 +266,11 @@ void initializeServer() {
                             ), sizeof(clientNew -> ip));
                         }
                         clientNew -> fd = clientNewFd;
+                        clientNew -> num_msg_rcv = 0;
+                        clientNew -> num_msg_sent = 0;
                         clientNew -> is_logged_in = true;
                         clientNew -> next_host = NULL;
+                        clientNew -> blocked = NULL;
                     }
                     fflush(stdout);
                 }  else {
@@ -734,13 +737,10 @@ void loginClient(char server_ip[], char server_port[]) {
                 if (fd == server -> fd) {
                     // handle data from the server
                     dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
-                    if (dataRcvd == 0) {
+                    if (dataRcvd <= 0) {
                         close(fd); // Close the connection
                         FD_CLR(fd, & master); // Remove the fd from master set
-                    } else if (dataRcvd == -1) {
-                        close(fd); // Close the connection
-                        FD_CLR(fd, & master); // Remove the fd from master set
-                    } else {
+                    }else {
                         exCommand(data_buffer, fd);
                     }
                 } else if (fd == STDIN) {
@@ -987,7 +987,7 @@ void client__send(char command[]) {
     client_ip[ipi] = '\0';
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, client_ip, & (sa.sin_addr));
-    if (result!=0) {
+    if (result==0) {
         cse4589_print_and_log("[SEND:ERROR]\n");
         cse4589_print_and_log("[SEND:END]\n");
         return;
@@ -1234,7 +1234,7 @@ void server__print_blocked(char blocker_ip_addr[]) {
     }
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, blocker_ip_addr, & (sa.sin_addr));
-    if (result==0 && temp) {
+    if (result!=0 && temp) {
         cse4589_print_and_log("[BLOCKED:SUCCESS]\n");
         struct host * temp_blocked = clients;
         temp_blocked = temp -> blocked;
