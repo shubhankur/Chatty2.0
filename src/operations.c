@@ -159,6 +159,7 @@ void initializeServer() {
     myhost -> fd = listening;
     freeaddrinfo(localhost_ai);
 
+    //  initialising variables
     int clientNewFd; 
     struct sockaddr_storage newClientAddr; 
     socklen_t addrlen;
@@ -292,7 +293,12 @@ int registerClientLIstener() {
     }
 
     // exiting
-    if (temp_ai == NULL || listen(listening, 10) == -1) {
+    if (temp_ai == NULL) {
+        exit(EXIT_FAILURE);
+    }
+
+    // listening
+    if (listen(listening, 10) == -1) {
         exit(EXIT_FAILURE);
     }
 
@@ -333,7 +339,9 @@ void exCommandHost(char command[], int requesting_client_fd) {
 
 //executing server commands
 void exCommandServer(char command[], int requesting_client_fd) {
-    if (strstr(command, "STATISTICS") != NULL) {
+    if (strstr(command, "LIST") != NULL) {
+        printLoggedInClients();
+    }  else if (strstr(command, "STATISTICS") != NULL) {
         server__print_statistics();
     } else if (strstr(command, "BLOCKED") != NULL) {
         char client_ip[dataSizeMax];
@@ -354,6 +362,8 @@ void exCommandServer(char command[], int requesting_client_fd) {
         }
         message[msgi - 1] = '\0';
         server__handle_broadcast(message, requesting_client_fd);
+    } else if (strstr(command, "REFRESH") != NULL) {
+        serverHandleRefresh(requesting_client_fd);
     } else if (strstr(command, "SEND") != NULL) {
         char client_ip[dataSizeMax], message[dataSizeMax];
         int cmdi = 5;
@@ -387,7 +397,20 @@ void exCommandServer(char command[], int requesting_client_fd) {
 
 /*** executing all the commands for clients ***/
 void exCommandClient(char command[]) {
-    if (strstr(command, "SUCCESSLOGOUT") != NULL) {
+    if (strstr(command, "LIST") != NULL) {
+        if (myhost -> loggedIn) {
+            printLoggedInClients();
+        } else {
+            cse4589_print_and_log("[LIST:ERROR]\n");
+            cse4589_print_and_log("[LIST:END]\n");
+        }
+    } else if (strstr(command, "SUCCESSLOGIN") != NULL) {
+        cse4589_print_and_log("[LOGIN:SUCCESS]\n");
+        cse4589_print_and_log("[LOGIN:END]\n");
+    } else if (strstr(command, "ERRORLOGIN") != NULL) {
+        cse4589_print_and_log("[LOGIN:ERROR]\n");
+        cse4589_print_and_log("[LOGIN:END]\n");
+    }  else if (strstr(command, "SUCCESSLOGOUT") != NULL) {
         myhost-> loggedIn = false;
         cse4589_print_and_log("[LOGOUT:SUCCESS]\n");
         cse4589_print_and_log("[LOGOUT:END]\n");
@@ -422,6 +445,7 @@ void exCommandClient(char command[]) {
             ipi += 1;
         }
         server_ip[ipi] = '\0';
+
         cmdi += 1;
         int pi = 0;
         while (command[cmdi] != '\0') {
@@ -431,6 +455,15 @@ void exCommandClient(char command[]) {
         }
         server_port[pi - 1] = '\0'; // REMOVE THE NEW LINE
         loginClient(server_ip, server_port);
+    } else if (strstr(command, "REFRESHRESPONSE") != NULL) {
+        clientRefreshClientList(command);
+    } else if (strstr(command, "REFRESH") != NULL) {
+        if (myhost -> loggedIn) {
+            sendCommand(server -> fd, "REFRESH\n");
+        } else {
+            cse4589_print_and_log("[REFRESH:ERROR]\n");
+            cse4589_print_and_log("[REFRESH:END]\n");
+        }
     } else if (strstr(command, "SEND") != NULL) {
         if (myhost -> loggedIn) {
             client__send(command);
@@ -492,6 +525,23 @@ void exCommandClient(char command[]) {
     fflush(stdout);
 }
 
+/***  display all the logged in clients ***/
+void printLoggedInClients() {
+    cse4589_print_and_log("[LIST:SUCCESS]\n");
+
+    struct host * temp = clients;
+    int id = 1;
+    while (temp != NULL) {
+        // refresh
+        if (temp -> loggedIn) {
+            cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", id, temp -> hostname, temp -> ip, (temp -> port));
+            id = id + 1;
+        }
+        temp = temp -> next_host;
+    }
+
+    cse4589_print_and_log("[LIST:END]\n");
+}
 /***  PRINT STATISTICS ***/
 void server__print_statistics() {
     cse4589_print_and_log("[STATISTICS:SUCCESS]\n");
@@ -747,6 +797,77 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     requesting_client -> queued_messages = temp_message;
 }
 
+// refreshing the client list
+void clientRefreshClientList(char clientListString[]) {
+    char * received = strstr(clientListString, "RECEIVE");
+    int rcvi = received - clientListString, cmdi = 0;
+    char command[dataSizeMax];
+    int blank_count = 0;
+    while (received != NULL && rcvi < strlen(clientListString)) {
+        if (clientListString[rcvi] == ' ')
+            blank_count++;
+        else
+            blank_count = 0;
+        command[cmdi] = clientListString[rcvi];
+        if (blank_count == 4) {
+            command[cmdi - 3] = '\0';
+            strcat(command, "\n");
+            exCommandClient(command);
+            cmdi = -1;
+        }
+        cmdi++;
+        rcvi++;
+    }
+    bool is_refresh = false;
+    clients = malloc(sizeof(struct host));
+    struct host * head = clients;
+    const char delimmiter[2] = "\n";
+    char * token = strtok(clientListString, delimmiter);
+    if (strstr(token, "NOTFIRST")) {
+        is_refresh = true;
+    }
+    if (token != NULL) {
+        token = strtok(NULL, delimmiter);
+        char client_ip[dataSizeMax], client_port[dataSizeMax], client_hostname[dataSizeMax];
+        while (token != NULL) {
+            if (strstr(token, "ENDREFRESH") != NULL) {
+                break;
+            }
+            struct host * clientNew = malloc(sizeof(struct host));
+            sscanf(token, "%s %s %s\n", client_ip, client_port, client_hostname);
+            token = strtok(NULL, delimmiter);
+            memcpy(clientNew -> port, client_port, sizeof(clientNew -> port));
+            memcpy(clientNew -> ip, client_ip, sizeof(clientNew -> ip));
+            memcpy(clientNew -> hostname, client_hostname, sizeof(clientNew -> hostname));
+            clientNew -> loggedIn = true;
+            clients -> next_host = clientNew;
+            clients = clients -> next_host;
+        }
+        clients = head -> next_host;
+    }
+    if (is_refresh) {
+        cse4589_print_and_log("[REFRESH:SUCCESS]\n");
+        cse4589_print_and_log("[REFRESH:END]\n");
+    } else {
+        exCommandClient("SUCCESSLOGIN");
+    }
+}
+
+//server handling the request to refresh the client
+void serverHandleRefresh(int requesting_client_fd) {
+    char clientListString[dataSizeMaxBg] = "REFRESHRESPONSE NOTFIRST\n";
+    struct host * temp = clients;
+    while (temp != NULL) {
+        if (temp -> loggedIn) {
+            char clientString[dataSizeMax * 4];
+            sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
+            strcat(clientListString, clientString);
+        }
+        temp = temp -> next_host;
+    }
+    strcat(clientListString, "ENDREFRESH\n");
+    sendCommand(requesting_client_fd, clientListString);
+}
 /** SERVER HANDLE SEND REQUEST FROM CLIENTS **/
 void server__handle_send(char client_ip[], char msg[], int requesting_client_fd) {
 
