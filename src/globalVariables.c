@@ -1,5 +1,5 @@
 #include <string.h>
-
+int yes = 1;
 struct host * clientNew = NULL; //to store new clients
 struct host * clients = NULL; //to store client details
 struct host * myhost = NULL; //to store myhostdetails

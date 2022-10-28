@@ -16,13 +16,6 @@
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
 
-
-#define dataSizeMax 500
-#define dataSizeMaxBg 500 * 200
-#define STDIN 0
-
-int yes = 1; // sued to set the socket
-
 // HELPER FUNCTIONS
 int setHostNameAndIp(struct host * h);
 void sendCommand(int fd, char msg[]);
