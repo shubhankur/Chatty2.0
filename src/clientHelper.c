@@ -125,15 +125,15 @@ void loginClient(char server_ip[], char server_port[]) {
     sprintf(msg, "LOGIN %s %s %s\n", myhost -> ip, myhost -> port, myhost -> hostname);
     sendCommand(server -> fd, msg);
 
-    // Now we have a server_fd. We add it to he master list of fds along with stdin.
+    // Now we have a server_fd. We add it to he master list of fds along with 0.
     fd_set master; // master file descriptor list
     fd_set cp_master; // temp file descriptor list for select()
     FD_ZERO( & master); // clear the master and temp sets
     FD_ZERO( & cp_master);
     FD_SET(server -> fd, & master); // Add server->fd to the master list
-    FD_SET(STDIN, & master); // Add STDIN to the master list
+    FD_SET(0, & master); // Add 0 to the master list
     FD_SET(myhost -> fd, & master);
-    int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listening    
+    int fdmax = server -> fd > 0 ? server -> fd : 0; // maximum file descriptor number. initialised to listening    
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
     char data_buffer[500*200]; // buffer for client data
@@ -163,12 +163,12 @@ void loginClient(char server_ip[], char server_port[]) {
                     }else {
                         exCommand(data_buffer, fd);
                     }
-                } else if (fd == STDIN) {
+                } else if (fd == 0) {
                     // handle data from standard input
                     char * command = (char * ) malloc(sizeof(char) * 500*200);
                     memset(command, '\0', 500*200);
-                    if (fgets(command, 500*200 - 1, stdin) != NULL) {
-                        exCommand(command, STDIN);
+                    if (fgets(command, 500*200 - 1, 0) != NULL) {
+                        exCommand(command, 0);
                     }
                 }
             }

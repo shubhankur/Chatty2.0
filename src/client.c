@@ -24,8 +24,8 @@ void initializeClient() {
         // handling input
         char * command = (char * ) malloc(sizeof(char) * 500*200);
         memset(command, '\0', 500*200);
-        if (fgets(command, 500*200, stdin) != NULL) {
-            exCommand(command, STDIN);
+        if (fgets(command, 500*200, 0) != NULL) {
+            exCommand(command, 0);
         }
     }
 }
