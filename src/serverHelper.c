@@ -32,7 +32,7 @@ void server__print_statistics() {
 
 /** server handling login and register of client **/
 void loginHandleServer(char client_ip[], char client_port[], char client_hostname[], int requesting_client_fd) {
-    char client_return_msg[dataSizeMaxBg] = "REFRESHRESPONSE FIRST\n";
+    char client_return_msg[500*200] = "REFRESHRESPONSE FIRST\n";
     struct host * temp = clients;
     bool is_new = true;
     struct host * requesting_client = malloc(sizeof(struct host));
@@ -73,7 +73,7 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     temp = clients;
     while (temp != NULL) {
         if (temp -> loggedIn) {
-            char clientString[dataSizeMax * 4];
+            char clientString[500 * 4];
             sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
             strcat(client_return_msg, clientString);
         }
@@ -82,7 +82,7 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
 
     strcat(client_return_msg, "ENDREFRESH\n");
     struct message * temp_message = requesting_client -> queued_messages;
-    char receive[dataSizeMax * 3];
+    char receive[500 * 3];
 
     while (temp_message != NULL) {
         requesting_client -> recvMsgCount++;
@@ -101,11 +101,11 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
 }
 //server handling the request to refresh the client
 void serverHandleRefresh(int requesting_client_fd) {
-    char clientListString[dataSizeMaxBg] = "REFRESHRESPONSE NOTFIRST\n";
+    char clientListString[500*200] = "REFRESHRESPONSE NOTFIRST\n";
     struct host * temp = clients;
     while (temp != NULL) {
         if (temp -> loggedIn) {
-            char clientString[dataSizeMax * 4];
+            char clientString[500 * 4];
             sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
             strcat(clientListString, clientString);
         }
@@ -117,7 +117,7 @@ void serverHandleRefresh(int requesting_client_fd) {
 /** SERVER HANDLE SEND REQUEST FROM CLIENTS **/
 void server__handle_send(char client_ip[], char msg[], int requesting_client_fd) {
 
-    char receive[dataSizeMax * 4];
+    char receive[500 * 4];
     struct host * temp = clients;
     struct host * from_client = malloc(sizeof(struct host)), * to_client = malloc(sizeof(struct host));;
     while (temp != NULL) {
@@ -220,7 +220,7 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
             continue;
         }
 
-        char receive[dataSizeMax * 4];
+        char receive[500 * 4];
 
         if (to_client -> loggedIn) {
             to_client -> recvMsgCount++;
@@ -251,7 +251,7 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
 }
 /** SERVER HANDLE BLOCK OR UNBLOCK REQUEST FROM CLIENTS **/
 void server__block_or_unblock(char command[], bool is_a_block, int requesting_client_fd) {
-    char client_ip[dataSizeMax], client_port[dataSizeMax];;
+    char client_ip[500], client_port[500];;
     if (is_a_block) {
         sscanf(command, "BLOCK %s %s\n", client_ip, client_port);
     } else {

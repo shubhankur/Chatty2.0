@@ -79,9 +79,9 @@ void initializeServer() {
             if (FD_ISSET(fd, & cp_master)) {
                 if (fd == STDIN) {
                     // handle data from standard input
-                    char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
-                    memset(command, '\0', dataSizeMaxBg);
-                    if (fgets(command, dataSizeMaxBg - 1, stdin) != NULL) { // -1 because of new line
+                    char * command = (char * ) malloc(sizeof(char) * 500*200);
+                    memset(command, '\0', 500*200);
+                    if (fgets(command, 500*200 - 1, stdin) != NULL) { // -1 because of new line
                         exCommand(command, fd);
                     }
                     fflush(stdout);

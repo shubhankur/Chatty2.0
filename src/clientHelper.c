@@ -121,7 +121,7 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // The client will send a login message to server with it's details here
     myhost -> loggedIn = true;
-    char msg[dataSizeMax * 4];
+    char msg[500 * 4];
     sprintf(msg, "LOGIN %s %s %s\n", myhost -> ip, myhost -> port, myhost -> hostname);
     sendCommand(server -> fd, msg);
 
@@ -136,7 +136,7 @@ void loginClient(char server_ip[], char server_port[]) {
     int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listening    
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
-    char data_buffer[dataSizeMaxBg]; // buffer for client data
+    char data_buffer[500*200]; // buffer for client data
     int dataRcvd; // holds number of bytes received and stored in data_buffer
     int fd;
     struct sockaddr_storage new_peer_addr; // client address
@@ -165,9 +165,9 @@ void loginClient(char server_ip[], char server_port[]) {
                     }
                 } else if (fd == STDIN) {
                     // handle data from standard input
-                    char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
-                    memset(command, '\0', dataSizeMaxBg);
-                    if (fgets(command, dataSizeMaxBg - 1, stdin) != NULL) {
+                    char * command = (char * ) malloc(sizeof(char) * 500*200);
+                    memset(command, '\0', 500*200);
+                    if (fgets(command, 500*200 - 1, stdin) != NULL) {
                         exCommand(command, STDIN);
                     }
                 }
@@ -185,7 +185,7 @@ void loginClient(char server_ip[], char server_port[]) {
 void clientRefreshClientList(char clientListString[]) {
     char * received = strstr(clientListString, "RECEIVE");
     int rcvi = received - clientListString, cmdi = 0;
-    char command[dataSizeMax];
+    char command[500];
     int blank_count = 0;
     while (received != NULL && rcvi < strlen(clientListString)) {
         if (clientListString[rcvi] == ' ')
@@ -212,7 +212,7 @@ void clientRefreshClientList(char clientListString[]) {
     }
     if (token != NULL) {
         token = strtok(NULL, delimmiter);
-        char client_ip[dataSizeMax], client_port[dataSizeMax], client_hostname[dataSizeMax];
+        char client_ip[500], client_port[500], client_hostname[500];
         while (token != NULL) {
             if (strstr(token, "ENDREFRESH") != NULL) {
                 break;
@@ -239,7 +239,7 @@ void clientRefreshClientList(char clientListString[]) {
 
 /** CLIENT SEND MESSAGE **/
 void client__send(char command[]) {
-    char client_ip[dataSizeMax];
+    char client_ip[500];
     int cmdi = 5;
     int ipi = 0;
     while (command[cmdi] != ' ') {
@@ -278,7 +278,7 @@ void client__handle_receive(char client_ip[], char msg[]) {
 
 /** BLOCK OR UNBLOCK **/
 void client__block_or_unblock(char command[], bool is_a_block) {
-    char client_ip[dataSizeMax];
+    char client_ip[500];
     if (is_a_block) {
         sscanf(command, "BLOCK %s\n", client_ip);
     } else {

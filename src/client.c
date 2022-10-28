@@ -22,9 +22,9 @@ void initializeClient() {
     registerClientLIstener();
     while (true) {
         // handling input
-        char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
-        memset(command, '\0', dataSizeMaxBg);
-        if (fgets(command, dataSizeMaxBg, stdin) != NULL) {
+        char * command = (char * ) malloc(sizeof(char) * 500*200);
+        memset(command, '\0', 500*200);
+        if (fgets(command, 500*200, stdin) != NULL) {
             exCommand(command, STDIN);
         }
     }

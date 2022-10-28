@@ -48,15 +48,15 @@ void exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "STATISTICS") != NULL) {
         server__print_statistics();
     } else if (strstr(command, "BLOCKED") != NULL) {
-        char client_ip[dataSizeMax];
+        char client_ip[500];
         sscanf(command, "BLOCKED %s", client_ip);
         server__print_blocked(client_ip);
     } else if (strstr(command, "LOGIN") != NULL) {
-        char client_hostname[dataSizeMax], client_port[dataSizeMax], client_ip[dataSizeMax];
+        char client_hostname[500], client_port[500], client_ip[500];
         sscanf(command, "LOGIN %s %s %s", client_ip, client_port, client_hostname);
         loginHandleServer(client_ip, client_port, client_hostname, requesting_client_fd);
     } else if (strstr(command, "BROADCAST") != NULL) {
-        char message[dataSizeMaxBg];
+        char message[500*200];
         int cmdi = 10;
         int msgi = 0;
         while (command[cmdi] != '\0') {
@@ -69,7 +69,7 @@ void exCommandServer(char command[], int requesting_client_fd) {
     } else if (strstr(command, "REFRESH") != NULL) {
         serverHandleRefresh(requesting_client_fd);
     } else if (strstr(command, "SEND") != NULL) {
-        char client_ip[dataSizeMax], message[dataSizeMax];
+        char client_ip[500], message[500];
         int cmdi = 5;
         int ipi = 0;
         while (command[cmdi] != ' ') {
@@ -133,7 +133,7 @@ void exCommandClient(char command[]) {
         cse4589_print_and_log("[SEND:SUCCESS]\n");
         cse4589_print_and_log("[SEND:END]\n");
     } else if (strstr(command, "LOGIN") != NULL) { // takes two arguments server ip and server port
-        char server_ip[dataSizeMax], server_port[dataSizeMax];
+        char server_ip[500], server_port[500];
         int cmdi = 6;
         int ipi = 0;
         while (command[cmdi] != ' ' && ipi < 256) {
@@ -169,7 +169,7 @@ void exCommandClient(char command[]) {
             cse4589_print_and_log("[SEND:END]\n");
         }
     } else if (strstr(command, "RECEIVE") != NULL) {
-        char client_ip[dataSizeMax], message[dataSizeMaxBg];
+        char client_ip[500], message[500*200];
         int cmdi = 8;
         int ipi = 0;
         while (command[cmdi] != ' ' && ipi < 256) {
