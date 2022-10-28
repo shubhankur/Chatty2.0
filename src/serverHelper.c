@@ -13,6 +13,7 @@
 #include "../include/logger.h"
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
+#include "../include/send.h"
 
 /***  PRINT STATISTICS ***/
 void server__print_statistics() {
