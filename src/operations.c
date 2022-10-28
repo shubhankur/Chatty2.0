@@ -42,9 +42,6 @@ void exCommandHost(char command[], int requesting_client_fd);
 void exCommandServer(char command[], int requesting_client_fd);
 void exCommandClient(char command[]);
 
-// _LIST
-void printLoggedInClients();
-
 // LOGIN
 int connectClientServer(char server_ip[], char server_port[]);
 void loginClient(char server_ip[], char server_port[]);
@@ -337,9 +334,7 @@ void exCommandHost(char command[], int requesting_client_fd) {
 
 //executing server commands
 void exCommandServer(char command[], int requesting_client_fd) {
-    if (strstr(command, "LIST") != NULL) {
-        printLoggedInClients();
-    }  else if (strstr(command, "STATISTICS") != NULL) {
+    if (strstr(command, "STATISTICS") != NULL) {
         server__print_statistics();
     } else if (strstr(command, "BLOCKED") != NULL) {
         char client_ip[dataSizeMax];
@@ -395,14 +390,7 @@ void exCommandServer(char command[], int requesting_client_fd) {
 
 /*** executing all the commands for clients ***/
 void exCommandClient(char command[]) {
-    if (strstr(command, "LIST") != NULL) {
-        if (myhost -> loggedIn) {
-            printLoggedInClients();
-        } else {
-            cse4589_print_and_log("[LIST:ERROR]\n");
-            cse4589_print_and_log("[LIST:END]\n");
-        }
-    } else if (strstr(command, "SUCCESSLOGIN") != NULL) {
+    if (strstr(command, "SUCCESSLOGIN") != NULL) {
         cse4589_print_and_log("[LOGIN:SUCCESS]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
     } else if (strstr(command, "ERRORLOGIN") != NULL) {
@@ -523,23 +511,6 @@ void exCommandClient(char command[]) {
     fflush(stdout);
 }
 
-/***  display all the logged in clients ***/
-void printLoggedInClients() {
-    cse4589_print_and_log("[LIST:SUCCESS]\n");
-
-    struct host * temp = clients;
-    int id = 1;
-    while (temp != NULL) {
-        // refresh
-        if (temp -> loggedIn) {
-            cse4589_print_and_log("%-5d%-35s%-20s%-8s\n", id, temp -> hostname, temp -> ip, (temp -> port));
-            id = id + 1;
-        }
-        temp = temp -> next_host;
-    }
-
-    cse4589_print_and_log("[LIST:END]\n");
-}
 /***  PRINT STATISTICS ***/
 void server__print_statistics() {
     cse4589_print_and_log("[STATISTICS:SUCCESS]\n");
