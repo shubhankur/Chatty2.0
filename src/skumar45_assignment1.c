@@ -20,11 +20,12 @@
  *
  * This contains the main function. Add further description here....
  */
-#include <stdio.h>
 #include <stdlib.h>
-
+#include <stdio.h>
 #include "../include/global.h"
 #include "../include/logger.h"
+#include "../include/operations.h"
+#include <string.h>
 
 /**
  * main function
@@ -33,15 +34,16 @@
  * @param  argv The argument list
  * @return 0 EXIT_SUCCESS
  */
-int main(int argc, char **argv)
-{
-	/*Init. Logger*/
-	cse4589_init_log(argv[2]);
 
-	/*Clear LOGFILE*/
-	fclose(fopen(LOGFILE, "w"));
+int main(int argc, char ** argv) {
+    /*Init. Logger*/
+    cse4589_init_log(argv[2]);
 
-	/*Start Here*/
+    /*Clear LOGFILE*/
+    fclose(fopen(LOGFILE, "w"));
 
-	return 0;
+    /*Start Here*/
+    //start the application
+    initialize(strcmp(argv[1], "s") == 0, argv[2]);
+    return 0;
 }
