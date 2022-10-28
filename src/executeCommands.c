@@ -17,6 +17,8 @@
 #include "../include/universalMethods.h"
 #include "../include/serverHelper.h"
 #include "../include/send.h"
+#include "../include/clientHelper.h"
+
 
 /***  EXECUTE COMMANDS ***/
 void exCommand(char command[], int requesting_client_fd){
