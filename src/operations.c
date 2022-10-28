@@ -182,13 +182,11 @@ void initializeServer() {
         int fd = 0;
         while(fd <= fdmax) {
             if (FD_ISSET(fd, & cp_master)) {
-                // handling new connection request
                 if (fd == STDIN) {
                     // handle data from standard input
                     char * command = (char * ) malloc(sizeof(char) * dataSizeMaxBg);
                     memset(command, '\0', dataSizeMaxBg);
-                    if (fgets(command, dataSizeMaxBg - 1, stdin) == NULL) { // -1 because of new line
-                    } else {
+                    if (fgets(command, dataSizeMaxBg - 1, stdin) != NULL) { // -1 because of new line
                         exCommand(command, fd);
                     }
                     fflush(stdout);
@@ -619,17 +617,10 @@ int connectClientServer(char server_ip[], char server_port[]) {
     }
 
     // exiting
-    if (temp_ai == NULL) {
+    if (temp_ai == NULL || isten(listening, 10) == -1) {
         return 0;
     }
-
-    // listening
-    if (listen(listening, 10) == -1) {
-        return 0;
-    }
-
     myhost -> fd = listening;
-
     freeaddrinfo(localhost_ai);
 
     return 1;
