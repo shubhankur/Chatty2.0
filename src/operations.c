@@ -27,7 +27,6 @@ int yes = 1; // sued to set the socket
 int setHostNameAndIp(struct host * h);
 void sendCommand(int fd, char msg[]);
 
-
 // APPLICATION STARTUP
 void initializeServer();
 void initializeClient();
