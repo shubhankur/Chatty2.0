@@ -77,6 +77,19 @@ void exitClient();
 // STATISTICS
 void server__print_statistics();
 
+//initialize the host
+void initialize(bool checkServer, char * port) {
+    myhost = malloc(sizeof(struct host));
+    memcpy(myhost -> port, port, sizeof(myhost -> port));
+    myhost -> checkServer = checkServer;
+    setHostNameAndIp(myhost);
+    if (checkServer) {
+        initializeServer();
+    } else {
+        initializeClient();
+    }
+}
+
 /***  Reference : https://ubmnc.wordpress.com/2010/09/22/on-getting-the-ip-name-of-a-machine-for-chatty/ ***/
 int setHostNameAndIp(struct host * h) {
     char myIP[16];
@@ -107,30 +120,10 @@ int setHostNameAndIp(struct host * h) {
     return 1;
 }
 
-//initialize the host
-void initialize(bool checkServer, char * port) {
-    myhost = malloc(sizeof(struct host));
-    memcpy(myhost -> port, port, sizeof(myhost -> port));
-    myhost -> checkServer = checkServer;
-    setHostNameAndIp(myhost);
-    if (checkServer) {
-        initializeServer();
-    } else {
-        initializeClient();
-    }
-}
-
-//handling message to and from server
-void sendCommand(int fd, char msg[]) {
-    int rv;
-    send(fd, msg, strlen(msg) + 1, 0);
-}
-
 //initialize the server
 void initializeServer() {
     int listening = 0;
     struct addrinfo hints, * localhost_ai, * temp_ai;
-    // creating a socket and binding
     memset( & hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -141,6 +134,7 @@ void initializeServer() {
     }
     temp_ai = localhost_ai;
     while(temp_ai != NULL){
+        //Creating listening socket
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (listening == -1) {
             temp_ai = temp_ai -> ai_next;
@@ -148,6 +142,7 @@ void initializeServer() {
         }
         setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
         setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
+        //Binding the listening socket
         if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
             close(listening);
             temp_ai = temp_ai -> ai_next;
@@ -155,19 +150,13 @@ void initializeServer() {
         }
         break;
     }
-    // exiting
-    if (temp_ai == NULL) {
-        exit(EXIT_FAILURE);
-    }
 
-    // listening
-    if (listen(listening, 20) == -1) {
+    if (temp_ai == NULL || listen(listening,20)==-1) {
         exit(EXIT_FAILURE);
     }
 
     // assigning to myhost file descriptor
     myhost -> fd = listening;
-
     freeaddrinfo(localhost_ai);
 
     //  initialising variables
@@ -185,7 +174,7 @@ void initializeServer() {
     // main loop
     while (1) {
         fd_set cp_master = master; // make a copy of master set
-        int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o i sync
+        int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o in sync
         if (socketCount == -1) {
             exit(EXIT_FAILURE);
         }
@@ -286,15 +275,18 @@ int registerClientLIstener() {
     if (error != 0) {
         exit(EXIT_FAILURE);
     }
-    for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
+    temp_ai = localhost_ai;
+    while (temp_ai != NULL) {
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (listening < 0) {
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
         setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
         if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
             close(listening);
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         break;
@@ -313,6 +305,13 @@ int registerClientLIstener() {
     myhost -> fd = listening;
 
     freeaddrinfo(localhost_ai);
+}
+
+
+//handling message to and from server
+void sendCommand(int fd, char msg[]) {
+    int rv;
+    send(fd, msg, strlen(msg) + 1, 0);
 }
 
 /***  EXECUTE COMMANDS ***/
