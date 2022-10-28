@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "operations.h": "c"
+        "operations.h": "c",
+        "string.h": "c",
+        "structs.h": "c"
     }
 }

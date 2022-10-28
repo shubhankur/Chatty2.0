@@ -14,16 +14,13 @@
 #include "../include/universalMethods.h"
 #include "../include/operations.h"
 #include "../include/structs.h"
+#include "../include/globalVariables.h"
+
 
 #define dataSizeMax 500
 #define dataSizeMaxBg 500 * 200
 #define STDIN 0
 
-// INITIALISE GLOBAL VARIABLES
-struct host * clientNew = NULL; //to store new clients
-struct host * clients = NULL; //to store client details
-struct host * myhost = NULL; //to store myhostdetails
-struct host * server = NULL; // to store server details
 int yes = 1; // sued to set the socket
 
 // HELPER FUNCTIONS
