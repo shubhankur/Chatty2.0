@@ -14,7 +14,9 @@
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
 #include "../include/executeCommands.h"
-
+#include "../include/universalMethods.h"
+#include "../include/serverHelper.h"
+#include "../include/send.h"
 
 /***  EXECUTE COMMANDS ***/
 void exCommand(char command[], int requesting_client_fd){

@@ -2,6 +2,7 @@
     "files.associations": {
         "operations.h": "c",
         "string.h": "c",
-        "structs.h": "c"
+        "structs.h": "c",
+        "universalmethods.h": "c"
     }
 }
