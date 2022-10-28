@@ -293,12 +293,7 @@ int registerClientLIstener() {
     }
 
     // exiting
-    if (temp_ai == NULL) {
-        exit(EXIT_FAILURE);
-    }
-
-    // listening
-    if (listen(listening, 10) == -1) {
+    if (temp_ai == NULL || listen(listening, 10) == -1) {
         exit(EXIT_FAILURE);
     }
 
