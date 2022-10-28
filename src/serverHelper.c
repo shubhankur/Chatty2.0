@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdbool.h>
+#include "../include/global.h"
+#include "../include/logger.h"
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
 
