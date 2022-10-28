@@ -3,6 +3,7 @@
         "operations.h": "c",
         "string.h": "c",
         "structs.h": "c",
-        "universalmethods.h": "c"
+        "universalmethods.h": "c",
+        "netdb.h": "c"
     }
 }
