@@ -617,7 +617,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     }
 
     // exiting
-    if (temp_ai == NULL || isten(listening, 10) == -1) {
+    if (temp_ai == NULL || listen(listening, 10) == -1) {
         return 0;
     }
     myhost -> fd = listening;
