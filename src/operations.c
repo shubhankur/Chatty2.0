@@ -12,7 +12,7 @@
 #include "../include/global.h"
 #include "../include/logger.h"
 #include "../include/universalMethods.h"
-#include "../include/initialize.h"
+#include "../include/operations.h"
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
 #include "../include/send.h"
