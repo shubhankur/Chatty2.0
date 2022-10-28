@@ -16,6 +16,7 @@
 #include "../include/structs.h"
 #include "../include/globalVariables.h"
 #include "../include/send.h"
+#include "../include/executeCommands.h"
 
 // HELPER FUNCTIONS
 int setHostNameAndIp(struct host * h);
