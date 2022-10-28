@@ -14,6 +14,8 @@
 #include "../include/send.h"
 #include "../include/clientHelper.h"
 #include "../include/send.h"
+#include "../include/global.h"
+#include "../include/logger.h"
 
 /*** connect sever and client***/
 int connectClientServer(char server_ip[], char server_port[]) {
