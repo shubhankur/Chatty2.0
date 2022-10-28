@@ -147,7 +147,6 @@ void initializeServer() {
         }
         break;
     }
-
     if (temp_ai == NULL || listen(listening,20)==-1) {
         exit(EXIT_FAILURE);
     }
