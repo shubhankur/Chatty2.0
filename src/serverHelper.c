@@ -15,101 +15,88 @@
 #include "../include/globalVariables.h"
 #include "../include/send.h"
 
-/***  PRINT STATISTICS ***/
-void server__print_statistics() {
+void serverPrintStatistics() {
     cse4589_print_and_log("[STATISTICS:SUCCESS]\n");
-
-    struct host * temp = clients;
     int id = 1;
-    while (temp != NULL) {
-        cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", id, temp -> hostname, temp -> sentMsgCount, temp -> recvMsgCount, temp -> loggedIn ? "logged-in" : "logged-out");
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        cse4589_print_and_log("%-5d%-35s%-8d%-8d%-8s\n", id, tmp -> hostname, tmp -> sentMsgCount, tmp -> recvMsgCount, tmp -> loggedIn ? "logged-in" : "logged-out");
         id = id + 1;
-        temp = temp -> next_host;
     }
-
     cse4589_print_and_log("[STATISTICS:END]\n");
 }
 
-/** server handling login and register of client **/
 void loginHandleServer(char client_ip[], char client_port[], char client_hostname[], int requesting_client_fd) {
-    char client_return_msg[500*200] = "REFRESHRESPONSE FIRST\n";
-    struct host * temp = clients;
-    bool is_new = true;
+    char returnMsg[500*200] = "REFRESHRESPONSE FIRST\n";
+    int is_new = 1;
     struct host * requesting_client = malloc(sizeof(struct host));
 
-    while (temp != NULL) {
-        if (temp -> fd == requesting_client_fd) {
-            requesting_client = temp;
-            is_new = false;
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (tmp -> fd == requesting_client_fd) {
+            requesting_client = tmp;
+            is_new = 0;
             break;
         }
-        temp = temp -> next_host;
     }
 
-    if (is_new) {
+    if (is_new==1) {
         memcpy(clientNew -> hostname, client_hostname, sizeof(clientNew -> hostname));
         memcpy(clientNew -> port, client_port, sizeof(clientNew -> port));
         requesting_client = clientNew;
         int client_port_value = atoi(client_port);
-        if (clients == NULL) {
-            clients = malloc(sizeof(struct host));
-            clients = clientNew;
-        } else if (client_port_value < atoi(clients -> port)) {
+        if (client_port_value < atoi(clients -> port)) {
             clientNew -> next_host = clients;
             clients = clientNew;
+        } 
+        else if (clients == NULL) {
+            clients = malloc(sizeof(struct host));
+            clients = clientNew;
         } else {
-            struct host * temp = clients;
-            while (temp -> next_host != NULL && atoi(temp -> next_host -> port) < client_port_value) {
-                temp = temp -> next_host;
+            struct host * tmp = clients;
+            for (; tmp -> next_host != NULL && atoi(tmp -> next_host -> port) < client_port_value;tmp = tmp -> next_host) {
+                
             }
-            clientNew -> next_host = temp -> next_host;
-            temp -> next_host = clientNew;
+            clientNew -> next_host = tmp -> next_host;
+            tmp -> next_host = clientNew;
         }
 
     } else {
         requesting_client -> loggedIn = true;
     }
-
-    temp = clients;
-    while (temp != NULL) {
-        if (temp -> loggedIn) {
-            char clientString[500 * 4];
-            sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
-            strcat(client_return_msg, clientString);
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (tmp -> loggedIn) {
+            char clientString[2000];
+            sprintf(clientString, "%s %s %s\n", tmp -> ip, tmp -> port, tmp -> hostname);
+            strcat(returnMsg, clientString);
         }
-        temp = temp -> next_host;
     }
 
-    strcat(client_return_msg, "ENDREFRESH\n");
-    struct message * temp_message = requesting_client -> queued_messages;
-    char receive[500 * 3];
+    strcat(returnMsg, "ENDREFRESH\n");
+    struct message * tmp_message = requesting_client -> queued_messages;
+    char receive[1500];
 
-    while (temp_message != NULL) {
+    for (struct message * tmp_message = requesting_client -> queued_messages;tmp_message != NULL;tmp_message = tmp_message -> next_message) {
         requesting_client -> recvMsgCount++;
-        sprintf(receive, "RECEIVE %s %s    ", temp_message -> from_client -> ip, temp_message -> text);
-        strcat(client_return_msg, receive);
-
-        if (!temp_message -> is_broadcast) {
+        sprintf(receive, "RECEIVE %s %s    ", tmp_message -> from_client -> ip, tmp_message -> text);
+        strcat(returnMsg, receive);
+        if (!tmp_message -> is_broadcast) {
             cse4589_print_and_log("[RELAYED:SUCCESS]\n");
-            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", temp_message -> from_client -> ip, requesting_client -> ip, temp_message -> text);
+            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", tmp_message -> from_client -> ip, requesting_client -> ip, tmp_message -> text);
             cse4589_print_and_log("[RELAYED:END]\n");
         }
-        temp_message = temp_message -> next_message;
     }
-    sendCommand(requesting_client_fd, client_return_msg);
-    requesting_client -> queued_messages = temp_message;
+    sendCommand(requesting_client_fd, returnMsg);
+    requesting_client -> queued_messages = tmp_message;
 }
 //server handling the request to refresh the client
 void serverHandleRefresh(int requesting_client_fd) {
     char clientListString[500*200] = "REFRESHRESPONSE NOTFIRST\n";
-    struct host * temp = clients;
-    while (temp != NULL) {
-        if (temp -> loggedIn) {
+    struct host * tmp = clients;
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (tmp -> loggedIn) {
             char clientString[500 * 4];
-            sprintf(clientString, "%s %s %s\n", temp -> ip, temp -> port, temp -> hostname);
+            sprintf(clientString, "%s %s %s\n", tmp -> ip, tmp -> port, tmp -> hostname);
             strcat(clientListString, clientString);
         }
-        temp = temp -> next_host;
     }
     strcat(clientListString, "ENDREFRESH\n");
     sendCommand(requesting_client_fd, clientListString);
@@ -118,19 +105,16 @@ void serverHandleRefresh(int requesting_client_fd) {
 void server__handle_send(char client_ip[], char msg[], int requesting_client_fd) {
 
     char receive[500 * 4];
-    struct host * temp = clients;
     struct host * from_client = malloc(sizeof(struct host)), * to_client = malloc(sizeof(struct host));;
-    while (temp != NULL) {
-        if (strstr(client_ip, temp -> ip) != NULL) {
-            to_client = temp;
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (strstr(client_ip, tmp -> ip) != NULL) {
+            to_client = tmp;
         }
-        if (requesting_client_fd == temp -> fd) {
-            from_client = temp;
+        if (requesting_client_fd == tmp -> fd) {
+            from_client = tmp;
         }
-        temp = temp -> next_host;
     }
     if (to_client == NULL || from_client == NULL) {
-        // TODO: CHECK IF THIS IS REQUIRED
         cse4589_print_and_log("[RELAYED:ERROR]\n");
         cse4589_print_and_log("[RELAYED:END]\n");
 
@@ -142,13 +126,11 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
 
     bool is_blocked = false;
 
-    temp = to_client -> blocked;
-    while (temp != NULL) {
-        if (strstr(from_client -> ip, temp -> ip) != NULL) {
+    for (struct host * tmp = to_client -> blocked;tmp != NULL;tmp = tmp -> next_host) {
+        if (strstr(from_client -> ip, tmp -> ip) != NULL) {
             is_blocked = true;
             break;
         }
-        temp = temp -> next_host;
     }
     sendCommand(from_client -> fd, "SUCCESSSEND\n");
     if (is_blocked) {
@@ -176,50 +158,40 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         if (to_client -> queued_messages == NULL) {
             to_client -> queued_messages = new_message;
         } else {
-            struct message * temp_message = to_client -> queued_messages;
-            while (temp_message -> next_message != NULL) {
-                temp_message = temp_message -> next_message;
+            for (struct message * tmp_message = to_client -> queued_messages;tmp_message -> next_message != NULL;tmp_message -> next_message = new_message) {
+                tmp_message = tmp_message -> next_message;
             }
-            temp_message -> next_message = new_message;
         }
     }
 
 }
 /** SERVER HANDLE BROADCAST REQUEST FROM CLIENT **/
 void server__handle_broadcast(char msg[], int requesting_client_fd) {
-    struct host * temp = clients;
+    struct host * tmp = clients;
     struct host * from_client = malloc(sizeof(struct host));
-    while (temp != NULL) {
-        if (requesting_client_fd == temp -> fd) {
-            from_client = temp;
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (requesting_client_fd == tmp -> fd) {
+            from_client = tmp;
         }
-        temp = temp -> next_host;
     }
-    struct host * to_client = clients;
     int id = 1;
     from_client -> sentMsgCount++;
-    while (to_client != NULL) {
+    for (struct host * to_client = clients;to_client != NULL;to_client = to_client -> next_host) {
         if (to_client -> fd == requesting_client_fd) {
             to_client = to_client -> next_host;
             continue;
         }
-
         bool is_blocked = false;
-
-        struct host * temp_blocked = to_client -> blocked;
-        while (temp_blocked != NULL) {
-            if (temp_blocked -> fd == requesting_client_fd) {
+        for (struct host * tmp_blocked = to_client -> blocked;tmp_blocked != NULL;tmp_blocked = tmp_blocked -> next_host) {
+            if (tmp_blocked -> fd == requesting_client_fd) {
                 is_blocked = true;
                 break;
             }
-            temp_blocked = temp_blocked -> next_host;
         }
-
         if (is_blocked) {
             to_client = to_client -> next_host;
             continue;
         }
-
         char receive[500 * 4];
 
         if (to_client -> loggedIn) {
@@ -234,14 +206,12 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
             if (to_client -> queued_messages == NULL) {
                 to_client -> queued_messages = new_message;
             } else {
-                struct message * temp_message = to_client -> queued_messages;
-                while (temp_message -> next_message != NULL) {
-                    temp_message = temp_message -> next_message;
+                struct message * tmp_message = to_client -> queued_messages;
+                for (;tmp_message -> next_message != NULL;tmp_message = tmp_message -> next_message) {
                 }
-                temp_message -> next_message = new_message;
+                tmp_message -> next_message = new_message;
             }
         }
-        to_client = to_client -> next_host;
     }
 
     cse4589_print_and_log("[RELAYED:SUCCESS]\n");
@@ -257,18 +227,16 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
     } else {
         sscanf(command, "UNBLOCK %s %s\n", client_ip, client_port);
     }
-    struct host * temp = clients;
     struct host * requesting_client = malloc(sizeof(struct host));
     struct host * blocked_client = malloc(sizeof(struct host));
 
-    while (temp != NULL) {
-        if (temp -> fd == requesting_client_fd) {
-            requesting_client = temp;
+    for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
+        if (tmp -> fd == requesting_client_fd) {
+            requesting_client = tmp;
         }
-        if (strstr(client_ip, temp -> ip) != NULL) {
-            blocked_client = temp;
+        if (strstr(client_ip, tmp -> ip) != NULL) {
+            blocked_client = tmp;
         }
-        temp = temp -> next_host;
     }
 
     if (blocked_client != NULL) {
@@ -287,27 +255,25 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
                 new_blocked_client -> next_host = requesting_client -> blocked;
                 requesting_client -> blocked = new_blocked_client;
             } else {
-                struct host * temp = requesting_client -> blocked;
-                while (temp -> next_host != NULL && atoi(temp -> next_host -> port) < new_blocked_client_port_value) {
-                    temp = temp -> next_host;
+                struct host * tmp = requesting_client -> blocked;
+                for (;tmp -> next_host != NULL && atoi(tmp -> next_host -> port) < new_blocked_client_port_value;tmp = tmp -> next_host) {
                 }
-                new_blocked_client -> next_host = temp -> next_host;
-                temp -> next_host = new_blocked_client;
+                new_blocked_client -> next_host = tmp -> next_host;
+                tmp -> next_host = new_blocked_client;
             }
 
             sendCommand(requesting_client_fd, "SUCCESSBLOCK\n");
         } else {
-            struct host * temp_blocked = requesting_client -> blocked;
-            if (strstr(temp_blocked ->ip, blocked_client ->ip) != NULL) {
+            struct host * tmp_blocked = requesting_client -> blocked;
+            if (strstr(tmp_blocked ->ip, blocked_client ->ip) != NULL) {
                 requesting_client -> blocked = requesting_client -> blocked -> next_host;
             } else {
-                struct host * previous = temp_blocked;
-                while (temp_blocked != NULL) {
-                    if (strstr(temp_blocked ->ip, blocked_client ->ip) != NULL) {
-                        previous -> next_host = temp_blocked -> next_host;
+                struct host * previous = tmp_blocked;
+                for (;tmp_blocked != NULL;tmp_blocked = tmp_blocked -> next_host) {
+                    if (strstr(tmp_blocked ->ip, blocked_client ->ip) != NULL) {
+                        previous -> next_host = tmp_blocked -> next_host;
                         break;
                     }
-                    temp_blocked = temp_blocked -> next_host;
                 }
             }
             sendCommand(requesting_client_fd, "SUCCESSUNBLOCK\n");
@@ -323,24 +289,22 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
 
 /***  PRINT BLOCKED ***/
 void server__print_blocked(char blocker_ip_addr[]) {
-    struct host * temp = clients;
-    while (temp != NULL) {
-        if (strstr(blocker_ip_addr, temp ->ip) != NULL) {
+    struct host * tmp = clients;
+    for (;tmp != NULL;tmp = tmp -> next_host) {
+        if (strstr(blocker_ip_addr, tmp ->ip) != NULL) {
             break;
         }
-        temp = temp -> next_host;
     }
     struct sockaddr_in sa;
     int result = inet_pton(AF_INET, blocker_ip_addr, & (sa.sin_addr));
-    if (result!=0 && temp) {
+    if (result!=0 && tmp) {
         cse4589_print_and_log("[BLOCKED:SUCCESS]\n");
-        struct host * temp_blocked = clients;
-        temp_blocked = temp -> blocked;
+        struct host * tmp_blocked = clients;
+        tmp_blocked = tmp -> blocked;
         int id = 1;
-        while (temp_blocked != NULL) {
-            cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", id, temp_blocked -> hostname, temp_blocked ->ip, atoi(temp_blocked -> port));
+        for (;tmp_blocked != NULL;tmp_blocked = tmp_blocked -> next_host) {
+            cse4589_print_and_log("%-5d%-35s%-20s%-8d\n", id, tmp_blocked -> hostname, tmp_blocked ->ip, atoi(tmp_blocked -> port));
             id = id + 1;
-            temp_blocked = temp_blocked -> next_host;
         }
     } else {
         cse4589_print_and_log("[BLOCKED:ERROR]\n");
@@ -351,34 +315,32 @@ void server__print_blocked(char blocker_ip_addr[]) {
 
 /** SERVER HANDLE LOGOUT REQUEST FROM CLIENT **/
 void server__handle_logout(int requesting_client_fd) {
-    struct host * temp = clients;
-    while (temp != NULL) {
-        if (temp -> fd == requesting_client_fd) {
+    struct host * tmp = clients;
+    for (;tmp != NULL;tmp = tmp -> next_host) {
+        if (tmp -> fd == requesting_client_fd) {
             sendCommand(requesting_client_fd, "SUCCESSLOGOUT\n");
-            temp -> loggedIn = false;
+            tmp -> loggedIn = false;
             break;
         }
-        temp = temp -> next_host;
     }
-    if (temp == NULL) {
+    if (tmp == NULL) {
         sendCommand(requesting_client_fd, "ERRORLOGOUT\n");
     }
 }
 
 //server handling the request too exit the client
 void exitServer(int requesting_client_fd) {
-    struct host * temp = clients;
-    if (temp -> fd == requesting_client_fd) {
+    struct host * tmp = clients;
+    if (tmp -> fd == requesting_client_fd) {
         clients = clients -> next_host;
     } else {
-        struct host * previous = temp;
-        while (temp != NULL) {
-            if (temp -> fd == requesting_client_fd) {
-                previous -> next_host = temp -> next_host;
-                temp = temp -> next_host;
+        struct host * previous = tmp;
+        for (;tmp != NULL;tmp = tmp -> next_host) {
+            if (tmp -> fd == requesting_client_fd) {
+                previous -> next_host = tmp -> next_host;
+                tmp = tmp -> next_host;
                 break;
             }
-            temp = temp -> next_host;
         }
     }
 }

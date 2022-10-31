@@ -6,4 +6,4 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
 void server__print_blocked(char blocker_ip_addr[]);
 void server__handle_logout(int requesting_client_fd);
 void exitServer(int requesting_client_fd);
-void server__print_statistics();
+void serverPrintStatistics();

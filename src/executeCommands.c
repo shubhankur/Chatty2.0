@@ -46,7 +46,7 @@ void exCommandHost(char command[], int requesting_client_fd) {
 //executing server commands
 void exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "STATISTICS") != NULL) {
-        server__print_statistics();
+        serverPrintStatistics();
     } else if (strstr(command, "BLOCKED") != NULL) {
         char client_ip[500];
         sscanf(command, "BLOCKED %s", client_ip);
