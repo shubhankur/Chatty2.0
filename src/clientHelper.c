@@ -35,15 +35,18 @@ int connectClientServer(char server_ip[], char server_port[]) {
     if (error != 0) {
         return 0;
     }
-    for (temp_ai = server_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
+    temp_ai = server_ai;
+    while(temp_ai != NULL) {
         server_fd = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
         if (server_fd < 0) {
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
         setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
         if (connect(server_fd, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
             close(server_fd);
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         break;
@@ -64,16 +67,19 @@ int connectClientServer(char server_ip[], char server_port[]) {
     if (error != 0) {
         return 0;
     }
-    for (temp_ai = localhost_ai; temp_ai != NULL; temp_ai = temp_ai -> ai_next) {
+    temp_ai = localhost_ai;
+    while (temp_ai != NULL) {
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
-        if (listening < 0) {
+        if (listening ==-1) {
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         setsockopt(listening, SOL_SOCKET, SO_REUSEPORT, & yes, sizeof(int));
         setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, & yes, sizeof(int));
-
+        //Binding the listening socket
         if (bind(listening, temp_ai -> ai_addr, temp_ai -> ai_addrlen) < 0) {
             close(listening);
+            temp_ai = temp_ai -> ai_next;
             continue;
         }
         break;
@@ -114,11 +120,6 @@ void loginClient(char server_ip[], char server_port[]) {
         }
     }
 
-    // myhost login succesfull
-    // client sync with server
-    // At this point the myhost has successfully logged in
-    // we need to make sure everything reflects this
-
     // The client will send a login message to server with it's details here
     myhost -> loggedIn = true;
     char msg[500 * 4];
@@ -127,9 +128,7 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // Now we have a server_fd. We add it to he master list of fds along with stdin.
     fd_set master; // master file descriptor list
-    fd_set cp_master; // temp file descriptor list for select()
     FD_ZERO( & master); // clear the master and temp sets
-    FD_ZERO( & cp_master);
     FD_SET(server -> fd, & master); // Add server->fd to the master list
     FD_SET(STDIN, & master); // Add STDIN to the master list
     FD_SET(myhost -> fd, & master);
@@ -137,38 +136,37 @@ void loginClient(char server_ip[], char server_port[]) {
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
     char data_buffer[500*200]; // buffer for client data
-    int dataRcvd; // holds number of bytes received and stored in data_buffer
     int fd;
     struct sockaddr_storage new_peer_addr; // client address
     socklen_t addrlen = sizeof new_peer_addr;
 
     // main loop
     while (myhost -> loggedIn) {
-        cp_master = master; // make a copy of master set
-        if (select(fdmax + 1, & cp_master, NULL, NULL, NULL) == -1) {
+        fd_set cp_master = master; // make a copy of master set
+        int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o in sync
+        if (socketCount == -1) {
             exit(EXIT_FAILURE);
         }
-
-        // run through the existing connections looking for data to read
-        for (fd = 0; fd <= fdmax; fd++) {
+        int fd = 0;
+        while(fd <= fdmax) {
             if (FD_ISSET(fd, & cp_master)) {
                 // if fd == listening, a new connection has come in.
-
-                if (fd == server -> fd) {
-                    // handle data from the server
-                    dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
-                    if (dataRcvd <= 0) {
-                        close(fd); // Close the connection
-                        FD_CLR(fd, & master); // Remove the fd from master set
-                    }else {
-                        exCommand(data_buffer, fd);
-                    }
-                } else if (fd == STDIN) {
+                if (fd == STDIN) {
                     // handle data from standard input
                     char * command = (char * ) malloc(sizeof(char) * 500*200);
                     memset(command, '\0', 500*200);
                     if (fgets(command, 500*200 - 1, stdin) != NULL) {
                         exCommand(command, STDIN);
+                    }
+                }
+                else if (fd == server -> fd) {
+                    // handle data from the server
+                    int dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
+                    if (dataRcvd <= 0) {
+                        close(fd); // Close the connection
+                        FD_CLR(fd, & master); // Remove the fd from master set
+                    }else {
+                        exCommand(data_buffer, fd);
                     }
                 }
             }
@@ -187,7 +185,7 @@ void clientRefreshClientList(char clientListString[]) {
     int rcvi = received - clientListString, cmdi = 0;
     char command[500];
     int blank_count = 0;
-    while (received != NULL && rcvi < strlen(clientListString)) {
+    for (;received != NULL && rcvi < strlen(clientListString);) {
         if (clientListString[rcvi] == ' ')
             blank_count++;
         else
@@ -213,7 +211,7 @@ void clientRefreshClientList(char clientListString[]) {
     if (token != NULL) {
         token = strtok(NULL, delimmiter);
         char client_ip[500], client_port[500], client_hostname[500];
-        while (token != NULL) {
+        for (;token != NULL;) {
             if (strstr(token, "ENDREFRESH") != NULL) {
                 break;
             }
@@ -242,7 +240,7 @@ void client__send(char command[]) {
     char client_ip[500];
     int cmdi = 5;
     int ipi = 0;
-    while (command[cmdi] != ' ') {
+    for (;command[cmdi] != ' ';) {
         client_ip[ipi] = command[cmdi];
         cmdi += 1;
         ipi += 1;
@@ -256,12 +254,11 @@ void client__send(char command[]) {
         return;
     }
     struct host * temp = clients;
-    while (temp != NULL) {
+    for (;temp != NULL;temp = temp -> next_host) {
         if (strstr(temp -> ip, client_ip) != NULL) {
             sendCommand(server -> fd, command);
             break;
         }
-        temp = temp -> next_host;
     }
     if (temp == NULL) {
         cse4589_print_and_log("[SEND:ERROR]\n");
@@ -287,21 +284,19 @@ void client__block_or_unblock(char command[], bool is_a_block) {
 
     // To check if its in the LIST
     struct host * temp = clients;
-    while (temp != NULL) {
+    for (;temp != NULL;temp = temp -> next_host) {
         if (strstr(client_ip, temp -> ip) != NULL) {
             break;
         }
-        temp = temp -> next_host;
     }
     struct host * blocked_client = temp;
 
     // To check if it's already blocked
     temp = myhost -> blocked;
-    while (temp != NULL) {
+    for (;temp != NULL;temp = temp -> next_host) {
         if (strstr(client_ip, temp -> ip) != NULL) {
             break;
         }
-        temp = temp -> next_host;
     }
     struct host * blocked_client_2 = temp;
 
@@ -314,10 +309,9 @@ void client__block_or_unblock(char command[], bool is_a_block) {
         new_blocked_client -> next_host = NULL;
         if (myhost -> blocked != NULL) {
             struct host * temp_blocked = myhost-> blocked;
-            while (temp_blocked -> next_host != NULL) {
+            for (;temp_blocked -> next_host != NULL;temp_blocked -> next_host = new_blocked_client) {
                 temp_blocked = temp_blocked -> next_host;
             }
-            temp_blocked -> next_host = new_blocked_client;
         } else {
             myhost -> blocked = new_blocked_client;
         }
@@ -328,12 +322,11 @@ void client__block_or_unblock(char command[], bool is_a_block) {
             myhost -> blocked = myhost -> blocked -> next_host;
         } else {
             struct host * previous = temp_blocked;
-            while (temp_blocked != NULL) {
+            for (;temp_blocked != NULL;temp_blocked = temp_blocked -> next_host) {
                 if (strstr(temp_blocked -> ip, blocked_client -> ip) != NULL) {
                     previous -> next_host = temp_blocked -> next_host;
                     break;
                 }
-                temp_blocked = temp_blocked -> next_host;
             }
         }
         sendCommand(server -> fd, command);
