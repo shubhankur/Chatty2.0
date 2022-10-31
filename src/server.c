@@ -63,8 +63,8 @@ void initializeServer() {
     fd_set master; 
     FD_ZERO( & master); // clear the master and temp sets
     FD_SET(listening, & master);
-    FD_SET(STDIN, & master); 
-    int fdmax = listening > STDIN ? listening : STDIN;   
+    FD_SET(0, & master); 
+    int fdmax = listening > 0 ? listening : 0;   
 
     // main loop
     while (1) {
@@ -77,11 +77,11 @@ void initializeServer() {
         int fd = 0;
         while(fd <= fdmax) {
             if (FD_ISSET(fd, & cp_master)) {
-                if (fd == STDIN) {
+                if (fd == 0) {
                     // handle data from standard input
                     char * command = (char * ) malloc(sizeof(char) * 500*200);
                     memset(command, '\0', 500*200);
-                    if (fgets(command, 500*200 - 1, stdin) != NULL) { // -1 because of new line
+                    if (fgets(command, 500*200 - 1, 0) != NULL) { // -1 because of new line
                         exCommand(command, fd);
                     }
                     fflush(stdout);

@@ -1,4 +1,4 @@
-int connectClientServer(char server_ip[], char server_port[]);
+bool connectClientServer(char server_ip[], char server_port[]);
 void loginClient(char server_ip[], char server_port[]);
 void clientRefreshClientList(char clientListString[]);
 void client__send(char command[]);

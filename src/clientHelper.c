@@ -19,7 +19,7 @@
 #include "../include/executeCommands.h"
 
 /*** connect sever and client***/
-int connectClientServer(char server_ip[], char server_port[]) {
+bool connectClientServer(char server_ip[], char server_port[]) {
     server = malloc(sizeof(struct host));
     memcpy(server -> ip, server_ip, sizeof(server -> ip));
     memcpy(server -> port, server_port, sizeof(server -> port));
@@ -33,7 +33,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     hints.ai_flags = AI_PASSIVE;
     int error = getaddrinfo(server -> ip, server -> port, & hints, & server_ai);
     if (error != 0) {
-        return 0;
+        return false;
     }
     temp_ai = server_ai;
     while(temp_ai != NULL) {
@@ -54,7 +54,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
 
     // exiting if unsuccessfull bind
     if (temp_ai == NULL) {
-        return 0;
+        return false;
     }
 
     server -> fd = server_fd;
@@ -65,7 +65,7 @@ int connectClientServer(char server_ip[], char server_port[]) {
     struct addrinfo * localhost_ai;
     error = getaddrinfo(NULL, myhost -> port, & hints, & localhost_ai);
     if (error != 0) {
-        return 0;
+        return false;
     }
     temp_ai = localhost_ai;
     while (temp_ai != NULL) {
@@ -87,12 +87,12 @@ int connectClientServer(char server_ip[], char server_port[]) {
 
     // exiting
     if (temp_ai == NULL || listen(listening, 10) == -1) {
-        return 0;
+        return false;
     }
     myhost -> fd = listening;
     freeaddrinfo(localhost_ai);
 
-    return 1;
+    return true;
 }
 
 /** client login **/
@@ -107,7 +107,7 @@ void loginClient(char server_ip[], char server_port[]) {
     if (server == NULL) {
         struct sockaddr_in sa;
         int result = inet_pton(AF_INET, server_ip, & (sa.sin_addr));
-        if (result==0 || connectClientServer(server_ip, server_port) == 0) {
+        if (result==0 || !connectClientServer(server_ip, server_port)) {
             cse4589_print_and_log("[LOGIN:ERROR]\n");
             cse4589_print_and_log("[LOGIN:END]\n");
             return;
@@ -126,13 +126,13 @@ void loginClient(char server_ip[], char server_port[]) {
     sprintf(msg, "LOGIN %s %s %s\n", myhost -> ip, myhost -> port, myhost -> hostname);
     sendCommand(server -> fd, msg);
 
-    // Now we have a server_fd. We add it to he master list of fds along with stdin.
+    // Now we have a server_fd. We add it to he master list of fds along with 0.
     fd_set master; // master file descriptor list
     FD_ZERO( & master); // clear the master and temp sets
     FD_SET(server -> fd, & master); // Add server->fd to the master list
-    FD_SET(STDIN, & master); // Add STDIN to the master list
+    FD_SET(0, & master); // Add 0 to the master list
     FD_SET(myhost -> fd, & master);
-    int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listening    
+    int fdmax = server -> fd > 0 ? server -> fd : 0; // maximum file descriptor number. initialised to listening    
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
     // variable initialisations
     char data_buffer[500*200]; // buffer for client data
@@ -153,12 +153,12 @@ void loginClient(char server_ip[], char server_port[]) {
         while(fd <= fdmax) {
             if (FD_ISSET(fd, & cp_master)) {
                 // if fd == listening, a new connection has come in.
-                if (fd == STDIN) {
+                if (fd == 0) {
                     // handle data from standard input
                     char * command = (char * ) malloc(sizeof(char) * 500*200);
                     memset(command, '\0', 500*200);
-                    if (fgets(command, 500*200 - 1, stdin) != NULL) {
-                        exCommand(command, STDIN);
+                    if (fgets(command, 500*200 - 1, 0) != NULL) {
+                        exCommand(command, 0);
                     }
                 }
                 else if (fd == server -> fd) {
