@@ -102,7 +102,7 @@ int loginClient(char server_ip[], char server_port[]) {
     if (server_ip == NULL || server_port == NULL) {
         cse4589_print_and_log("[LOGIN:ERROR]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
-        return;
+        return 0;
     }
     if (server == NULL) {
         struct sockaddr_in sa;
@@ -110,13 +110,13 @@ int loginClient(char server_ip[], char server_port[]) {
         if (result==0 || !connectClientServer(server_ip, server_port)) {
             cse4589_print_and_log("[LOGIN:ERROR]\n");
             cse4589_print_and_log("[LOGIN:END]\n");
-            return;
+            return 0;
         }
     } else {
         if (strstr(server -> ip, server_ip) == NULL || strstr(server -> port, server_port) == NULL) {
             cse4589_print_and_log("[LOGIN:ERROR]\n");
             cse4589_print_and_log("[LOGIN:END]\n");
-            return;
+            return 0;
         }
     }
 
