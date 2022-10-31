@@ -142,7 +142,9 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // main loop
     while (myhost -> loggedIn) {
-        fd_set cp_master = master; // make a copy of master set
+        fd_set cp_master ;
+        FD_ZERO(& cp_master);
+        cp_master= master; // make a copy of master set
         int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o in sync
         if (socketCount == -1) {
             exit(EXIT_FAILURE);
@@ -309,9 +311,10 @@ void client__block_or_unblock(char command[], bool is_a_block) {
         new_blocked_client -> next_host = NULL;
         if (myhost -> blocked != NULL) {
             struct host * temp_blocked = myhost-> blocked;
-            for (;temp_blocked -> next_host != NULL;temp_blocked -> next_host = new_blocked_client) {
-                temp_blocked = temp_blocked -> next_host;
+            for (;temp_blocked -> next_host != NULL;temp_blocked = temp_blocked -> next_host) {
+                
             }
+            temp_blocked -> next_host = new_blocked_client;
         } else {
             myhost -> blocked = new_blocked_client;
         }
