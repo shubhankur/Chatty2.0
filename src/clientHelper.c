@@ -142,8 +142,8 @@ void loginClient(char server_ip[], char server_port[]) {
 
     // main loop
     while (myhost -> loggedIn) {
-        fd_set cp_master ;
-        FD_ZERO(& cp_master);
+        fd_set cp_master;
+        FD_ZERO( & cp_master);
         cp_master= master; // make a copy of master set
         int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o in sync
         if (socketCount == -1) {
@@ -172,6 +172,7 @@ void loginClient(char server_ip[], char server_port[]) {
                     }
                 }
             }
+            fd++;
         }
 
         fflush(stdout);
