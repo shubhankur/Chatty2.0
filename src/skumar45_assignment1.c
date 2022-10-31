@@ -20,13 +20,13 @@
  *
  * This contains the main function. Add further description here....
  */
-
-
+#include <stdlib.h>
 #include <stdio.h>
 #include "../include/global.h"
 #include "../include/logger.h"
 #include "../include/operations.h"
 #include <string.h>
+
 /**
  * main function
  *
@@ -34,6 +34,7 @@
  * @param  argv The argument list
  * @return 0 EXIT_SUCCESS
  */
+
 int main(int argc, char ** argv) {
     /*Init. Logger*/
     cse4589_init_log(argv[2]);
