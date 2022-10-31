@@ -44,7 +44,7 @@ void exCommandHost(char command[], int requesting_client_fd) {
 }
 
 //executing server commands
-void exCommandServer(char command[], int requesting_client_fd) {
+int exCommandServer(char command[], int requesting_client_fd) {
     if (strstr(command, "STATISTICS") != NULL) {
         serverPrintStatistics();
     } else if (strstr(command, "BLOCKED") != NULL) {
@@ -97,10 +97,10 @@ void exCommandServer(char command[], int requesting_client_fd) {
         exitServer(requesting_client_fd);
     }
     fflush(stdout);
+    return 1;
 }
 
-/*** executing all the commands for clients ***/
-void exCommandClient(char command[]) {
+int exCommandClient(char command[]) {
     if (strstr(command, "SUCCESSLOGIN") != NULL) {
         cse4589_print_and_log("[LOGIN:SUCCESS]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
@@ -220,4 +220,5 @@ void exCommandClient(char command[]) {
         exitClient();
     }
     fflush(stdout);
+    return 1;
 }
