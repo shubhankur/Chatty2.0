@@ -3,3 +3,4 @@ extern struct host * clients; //to store client details
 extern struct host * myhost; //to store myhostdetails
 extern struct host * server; // to store server details
 extern int yes;
+#define STDIN 0
