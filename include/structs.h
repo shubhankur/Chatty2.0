@@ -19,5 +19,4 @@ struct host {
     struct host * next_host;
     bool loggedIn;
     bool checkServer;
-    struct message * queued_messages;
 };

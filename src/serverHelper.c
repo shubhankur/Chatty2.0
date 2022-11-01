@@ -163,19 +163,6 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
             to_client -> recvMsgCount++;
             sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
             sendCommand(to_client -> fd, receive);
-        } else {
-            struct message * new_message = malloc(sizeof(struct message));
-            memcpy(new_message -> text, msg, sizeof(new_message -> text));
-            new_message -> from_client = from_client;
-            new_message -> is_broadcast = true;
-            if (to_client -> queued_messages == NULL) {
-                to_client -> queued_messages = new_message;
-            } else {
-                struct message * tmp_message = to_client -> queued_messages;
-                for (;tmp_message -> next_message != NULL;tmp_message = tmp_message -> next_message) {
-                }
-                tmp_message -> next_message = new_message;
-            }
         }
     }
 
