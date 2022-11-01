@@ -34,7 +34,7 @@ void exCommand(char command[], int requesting_client_fd){
 //executing universal commands
 void exCommandHost(char command[], int requesting_client_fd) {
     char author[] = "AUTHOR";
-    if (strcmp(command, author) != NULL) {
+    if (strcmp(command, author) == 0) {
         printAuthor("skumar45");
     } else if (strstr(command, "IP") != NULL) {
         displayIp(myhost->ip);
