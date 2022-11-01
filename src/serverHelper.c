@@ -142,8 +142,6 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         to_client -> recvMsgCount++;
         sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
         sendCommand(to_client -> fd, receive);
-
-        // TODO: CHECK IF THIS NEEDS TO BE SENT WHEN BLOCKED
         cse4589_print_and_log("[RELAYED:SUCCESS]\n");
         cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", from_client -> ip, to_client -> ip, msg);
         cse4589_print_and_log("[RELAYED:END]\n");
