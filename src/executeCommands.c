@@ -34,14 +34,16 @@ void exCommand(char command[], int requesting_client_fd){
 //executing universal commands
 void exCommandHost(char command[], int requesting_client_fd) {
     int len = strlen(command);
-    if(command[len-1] == '\n' ){
-        command[len-1]=0;
+    char command2[len];
+    memcpy(command2, command, len);
+    if(command2[len-1] == '\n' ){
+        command2[len-1]=0;
     }
-    if (strcmp(command, "AUTHOR") == 0) {
+    if (strcmp(command2, "AUTHOR") == 0) {
         printAuthor("skumar45");
-    } else if (strcmp(command, "IP") == 0) {
+    } else if (strcmp(command2, "IP") == 0) {
         displayIp(myhost->ip);
-    } else if (strcmp(command, "PORT") == 0) {
+    } else if (strcmp(command2, "PORT") == 0) {
         displayPort(myhost -> port);
     }
     fflush(stdout);
@@ -50,8 +52,10 @@ void exCommandHost(char command[], int requesting_client_fd) {
 //executing server commands
 int exCommandServer(char command[], int requesting_client_fd) {
     int len = strlen(command);
-    if(command[len-1] == '\n' ){
-        command[len-1]=0;
+    char command2[len];
+    memcpy(command2, command, len);
+    if(command2[len-1] == '\n' ){
+        command2[len-1]=0;
     }
     if (strcmp(command, "STATISTICS") == 0) {
         serverPrintStatistics();
@@ -110,8 +114,10 @@ int exCommandServer(char command[], int requesting_client_fd) {
 
 int exCommandClient(char command[]) {
     int len = strlen(command);
-    if(command[len-1] == '\n' ){
-        command[len-1]=0;
+    char command2[len];
+    memcpy(command2, command, len);
+    if(command2[len-1] == '\n' ){
+        command2[len-1]=0;
     }
     if (strcmp(command, "SUCCESSLOGIN") == 0) {
         cse4589_print_and_log("[LOGIN:SUCCESS]\n");
