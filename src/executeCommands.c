@@ -45,48 +45,49 @@ void exCommandHost(char command[], int requesting_client_fd) {
 
 //executing server commands
 int exCommandServer(char command[], int requesting_client_fd) {
-    if (strcmp(command, "STATISTICS") == 0) {
+    if (strcmp(command, "REFRESH") == 0) {
+        serverHandleRefresh(requesting_client_fd);
+    }
+    else if (strcmp(command, "LOGIN") == 0) {
+        char client_hostname[500], client_port[500], client_ip[500];
+        sscanf(command, "LOGIN %s %s %s", client_ip, client_port, client_hostname);
+        loginHandleServer(client_ip, client_port, client_hostname, requesting_client_fd);
+    } else if (strcmp(command, "SEND") == 0) {
+        char client_ip[500], message[500];
+        int cc = 5;
+        int ipi = 0;
+        while (command[cc] != ' ') {
+            client_ip[ipi] = command[cc];
+            cc += 1;
+            ipi += 1;
+        }
+        client_ip[ipi] = '\0';
+        cc++;
+        int mc = 0;
+        while (command[cc] != '\0') {
+            message[mc] = command[cc];
+            cc += 1;
+            mc += 1;
+        }
+        message[mc - 1] = '\0'; // Remove new line
+        server__handle_send(client_ip, message, requesting_client_fd);
+    } else if (strcmp(command, "BROADCAST") == 0) {
+        char message[500*200];
+        int cc = 10;
+        int mc = 0;
+        while (command[cc] != '\0') {
+            message[mc] = command[cc];
+            cc += 1;
+            mc += 1;
+        }
+        message[mc - 1] = '\0';
+        server__handle_broadcast(message, requesting_client_fd);
+    } else if (strcmp(command, "STATISTICS") == 0) {
         serverPrintStatistics();
     } else if (strcmp(command, "BLOCKED") == 0) {
         char client_ip[500];
         sscanf(command, "BLOCKED %s", client_ip);
         server__print_blocked(client_ip);
-    } else if (strcmp(command, "LOGIN") == 0) {
-        char client_hostname[500], client_port[500], client_ip[500];
-        sscanf(command, "LOGIN %s %s %s", client_ip, client_port, client_hostname);
-        loginHandleServer(client_ip, client_port, client_hostname, requesting_client_fd);
-    } else if (strcmp(command, "BROADCAST") == 0) {
-        char message[500*200];
-        int cmdi = 10;
-        int msgi = 0;
-        while (command[cmdi] != '\0') {
-            message[msgi] = command[cmdi];
-            cmdi += 1;
-            msgi += 1;
-        }
-        message[msgi - 1] = '\0';
-        server__handle_broadcast(message, requesting_client_fd);
-    } else if (strcmp(command, "REFRESH") == 0) {
-        serverHandleRefresh(requesting_client_fd);
-    } else if (strcmp(command, "SEND") == 0) {
-        char client_ip[500], message[500];
-        int cmdi = 5;
-        int ipi = 0;
-        while (command[cmdi] != ' ') {
-            client_ip[ipi] = command[cmdi];
-            cmdi += 1;
-            ipi += 1;
-        }
-        client_ip[ipi] = '\0';
-        cmdi++;
-        int msgi = 0;
-        while (command[cmdi] != '\0') {
-            message[msgi] = command[cmdi];
-            cmdi += 1;
-            msgi += 1;
-        }
-        message[msgi - 1] = '\0'; // Remove new line
-        server__handle_send(client_ip, message, requesting_client_fd);
     } else if (strcmp(command, "UNBLOCK") == 0) {
         server__block_or_unblock(command, false, requesting_client_fd);
     } else if (strcmp(command, "BLOCK") == 0) {
@@ -134,20 +135,20 @@ int exCommandClient(char command[]) {
         cse4589_print_and_log("[SEND:END]\n");
     } else if (strcmp(command, "LOGIN") == 0) { // takes two arguments server ip and server port
         char server_ip[500], server_port[500];
-        int cmdi = 6;
+        int cc = 6;
         int ipi = 0;
-        while (command[cmdi] != ' ' && ipi < 256) {
-            server_ip[ipi] = command[cmdi];
-            cmdi += 1;
+        while (command[cc] != ' ' && ipi < 256) {
+            server_ip[ipi] = command[cc];
+            cc += 1;
             ipi += 1;
         }
         server_ip[ipi] = '\0';
 
-        cmdi += 1;
+        cc += 1;
         int pi = 0;
-        while (command[cmdi] != '\0') {
-            server_port[pi] = command[cmdi];
-            cmdi += 1;
+        while (command[cc] != '\0') {
+            server_port[pi] = command[cc];
+            cc += 1;
             pi += 1;
         }
         server_port[pi - 1] = '\0'; // REMOVE THE NEW LINE
@@ -170,23 +171,23 @@ int exCommandClient(char command[]) {
         }
     } else if (strcmp(command, "RECEIVE") == 0) {
         char client_ip[500], message[500*200];
-        int cmdi = 8;
+        int cc = 8;
         int ipi = 0;
-        while (command[cmdi] != ' ' && ipi < 256) {
-            client_ip[ipi] = command[cmdi];
-            cmdi += 1;
+        while (command[cc] != ' ' && ipi < 256) {
+            client_ip[ipi] = command[cc];
+            cc += 1;
             ipi += 1;
         }
         client_ip[ipi] = '\0';
 
-        cmdi += 1;
-        int msgi = 0;
-        while (command[cmdi] != '\0') {
-            message[msgi] = command[cmdi];
-            cmdi += 1;
-            msgi += 1;
+        cc += 1;
+        int mc = 0;
+        while (command[cc] != '\0') {
+            message[mc] = command[cc];
+            cc += 1;
+            mc += 1;
         }
-        message[msgi - 1] = '\0'; // REMOVE THE NEW LINE
+        message[mc - 1] = '\0'; // REMOVE THE NEW LINE
         client__handle_receive(client_ip, message);
     } else if (strcmp(command, "BROADCAST") == 0) {
         if (myhost-> loggedIn) {

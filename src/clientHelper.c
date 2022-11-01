@@ -113,7 +113,7 @@ int loginClient(char server_ip[], char server_port[]) {
             return 0;
         }
     } else {
-        if (strstr(server -> ip, server_ip) == NULL || strstr(server -> port, server_port) == NULL) {
+        if (strcmp(server -> ip, server_ip) != 0 || strcmp(server -> port, server_port) != 0) {
             cse4589_print_and_log("[LOGIN:ERROR]\n");
             cse4589_print_and_log("[LOGIN:END]\n");
             return 0;
@@ -215,7 +215,7 @@ void clientRefreshClientList(char clientListString[]) {
         token = strtok(NULL, delimmiter);
         char client_ip[500], client_port[500], client_hostname[500];
         for (;token != NULL;) {
-            if (strstr(token, "ENDREFRESH") != NULL) {
+            if (strcmp(token, "ENDREFRESH") == 0) {
                 break;
             }
             struct host * clientNew = malloc(sizeof(struct host));
@@ -258,7 +258,7 @@ void client__send(char command[]) {
     }
     struct host * temp = clients;
     for (;temp != NULL;temp = temp -> next_host) {
-        if (strstr(temp -> ip, client_ip) != NULL) {
+        if (strcmp(temp -> ip, client_ip) == 0) {
             sendCommand(server -> fd, command);
             break;
         }
@@ -288,7 +288,7 @@ void client__block_or_unblock(char command[], bool is_a_block) {
     // To check if its in the LIST
     struct host * temp = clients;
     for (;temp != NULL;temp = temp -> next_host) {
-        if (strstr(client_ip, temp -> ip) != NULL) {
+        if (strcmp(client_ip, temp -> ip) == 0) {
             break;
         }
     }
@@ -297,7 +297,7 @@ void client__block_or_unblock(char command[], bool is_a_block) {
     // To check if it's already blocked
     temp = myhost -> blocked;
     for (;temp != NULL;temp = temp -> next_host) {
-        if (strstr(client_ip, temp -> ip) != NULL) {
+        if (strcmp(client_ip, temp -> ip) == 0) {
             break;
         }
     }
@@ -322,12 +322,12 @@ void client__block_or_unblock(char command[], bool is_a_block) {
         sendCommand(server -> fd, command);
     } else if (blocked_client != NULL && blocked_client_2 != NULL && !is_a_block) {
         struct host * temp_blocked = myhost -> blocked;
-        if (strstr(blocked_client -> ip, temp_blocked -> ip) != NULL) {
+        if (strcmp(blocked_client -> ip, temp_blocked -> ip) == 0) {
             myhost -> blocked = myhost -> blocked -> next_host;
         } else {
             struct host * previous = temp_blocked;
             for (;temp_blocked != NULL;temp_blocked = temp_blocked -> next_host) {
-                if (strstr(temp_blocked -> ip, blocked_client -> ip) != NULL) {
+                if (strcmp(temp_blocked -> ip, blocked_client -> ip) == 0) {
                     previous -> next_host = temp_blocked -> next_host;
                     break;
                 }

@@ -106,7 +106,7 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
     char receive[2000];
     struct host * from_client = malloc(sizeof(struct host)), * to_client = malloc(sizeof(struct host));;
     for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
-        if (strstr(client_ip, tmp -> ip) != NULL) {
+        if (strcmp(client_ip, tmp -> ip) == 0) {
             to_client = tmp;
         }
         if (requesting_client_fd == tmp -> fd) {
@@ -124,7 +124,7 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
     // CHECK IF SENDER IS BLOCKED (FROM IS BLOCKED BY TO)
     bool is_blocked = false;
     for (struct host * tmp = to_client -> blocked;tmp != NULL;tmp = tmp -> next_host) {
-        if (strstr(from_client -> ip, tmp -> ip) != NULL) {
+        if (strcmp(from_client -> ip, tmp -> ip) == 0) {
             is_blocked = true;
             break;
         }
@@ -142,8 +142,6 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         to_client -> recvMsgCount++;
         sprintf(receive, "RECEIVE %s %s\n", from_client -> ip, msg);
         sendCommand(to_client -> fd, receive);
-
-        // TODO: CHECK IF THIS NEEDS TO BE SENT WHEN BLOCKED
         cse4589_print_and_log("[RELAYED:SUCCESS]\n");
         cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", from_client -> ip, to_client -> ip, msg);
         cse4589_print_and_log("[RELAYED:END]\n");
@@ -228,7 +226,7 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
         if (tmp -> fd == requesting_client_fd) {
             requesting_client = tmp;
         }
-        if (strstr(client_ip, tmp -> ip) != NULL) {
+        if (strcmp(client_ip, tmp -> ip) == 0) {
             blocked_client = tmp;
         }
     }
@@ -259,12 +257,12 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
             sendCommand(requesting_client_fd, "SUCCESSBLOCK\n");
         } else {
             struct host * tmp_blocked = requesting_client -> blocked;
-            if (strstr(tmp_blocked ->ip, blocked_client ->ip) != NULL) {
+            if (strcmp(tmp_blocked ->ip, blocked_client ->ip) == 0) {
                 requesting_client -> blocked = requesting_client -> blocked -> next_host;
             } else {
                 struct host * previous = tmp_blocked;
                 for (;tmp_blocked != NULL;tmp_blocked = tmp_blocked -> next_host) {
-                    if (strstr(tmp_blocked ->ip, blocked_client ->ip) != NULL) {
+                    if (strcmp(tmp_blocked ->ip, blocked_client ->ip) == 0) {
                         previous -> next_host = tmp_blocked -> next_host;
                         break;
                     }
@@ -285,7 +283,7 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
 void server__print_blocked(char blocker_ip_addr[]) {
     struct host * tmp = clients;
     for (;tmp != NULL;tmp = tmp -> next_host) {
-        if (strstr(blocker_ip_addr, tmp ->ip) != NULL) {
+        if (strcmp(blocker_ip_addr, tmp ->ip) == 0) {
             break;
         }
     }
