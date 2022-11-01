@@ -21,7 +21,7 @@
 
 
 /***  EXECUTE COMMANDS ***/
-void exCommand(char *command, int requesting_client_fd){
+void exCommand(char command[], int requesting_client_fd){
     exCommandHost(command, requesting_client_fd);
     if (myhost -> checkServer) {
         exCommandServer(command, requesting_client_fd);
@@ -32,7 +32,7 @@ void exCommand(char *command, int requesting_client_fd){
 }
 
 //executing universal commands
-void exCommandHost(char *command, int requesting_client_fd) {
+void exCommandHost(char command[], int requesting_client_fd) {
     if (strcmp(command, "AUTHOR") == 0) {
         printAuthor("skumar45");
     } else if (strcmp(command, "IP") == 0) {
@@ -44,7 +44,7 @@ void exCommandHost(char *command, int requesting_client_fd) {
 }
 
 //executing server commands
-int exCommandServer(char *command, int requesting_client_fd) {
+int exCommandServer(char command[], int requesting_client_fd) {
     if (strcmp(command, "STATISTICS") == 0) {
         serverPrintStatistics();
     } else if (strcmp(command, "BLOCKED") == 0) {
@@ -100,7 +100,7 @@ int exCommandServer(char *command, int requesting_client_fd) {
     return 1;
 }
 
-int exCommandClient(char *command) {
+int exCommandClient(char command[]) {
     if (strcmp(command, "SUCCESSLOGIN") == 0) {
         cse4589_print_and_log("[LOGIN:SUCCESS]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
