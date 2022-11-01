@@ -15,7 +15,7 @@
 #include "../include/globalVariables.h"
 #include "../include/send.h"
 
-void serverPrintStatistics() {
+int serverPrintStatistics() {
     cse4589_print_and_log("[STATISTICS:SUCCESS]\n");
     int id = 1;
     for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
@@ -23,9 +23,10 @@ void serverPrintStatistics() {
         id = id + 1;
     }
     cse4589_print_and_log("[STATISTICS:END]\n");
+    return 1;
 }
 
-void loginHandleServer(char client_ip[], char client_port[], char client_hostname[], int requesting_client_fd) {
+int loginHandleServer(char client_ip[], char client_port[], char client_hostname[], int requesting_client_fd) {
     char returnMsg[500*200] = "REFRESHRESPONSE FIRST\n";
     int is_new = 1;
     struct host * requesting_client = malloc(sizeof(struct host));
@@ -74,9 +75,10 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     strcat(returnMsg, "ENDREFRESH\n");
     char receive[1500];
     sendCommand(requesting_client_fd, returnMsg);
+    return 1;
 }
 //server handling the request to refresh the client
-void serverHandleRefresh(int requesting_client_fd) {
+int serverHandleRefresh(int requesting_client_fd) {
     char clientListString[500*200] = "REFRESHRESPONSE NOTFIRST\n";
     for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
         if (tmp -> loggedIn) {
@@ -87,6 +89,7 @@ void serverHandleRefresh(int requesting_client_fd) {
     }
     strcat(clientListString, "ENDREFRESH\n");
     sendCommand(requesting_client_fd, clientListString);
+    return 1;
 }
 /** SERVER HANDLE SEND REQUEST FROM CLIENTS **/
 void server__handle_send(char client_ip[], char msg[], int requesting_client_fd) {
@@ -136,7 +139,7 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
 
 }
 /** SERVER HANDLE BROADCAST REQUEST FROM CLIENT **/
-void server__handle_broadcast(char msg[], int requesting_client_fd) {
+int server__handle_broadcast(char msg[], int requesting_client_fd) {
     struct host * from_client = malloc(sizeof(struct host));
     for (struct host * tmp = clients;tmp != NULL;tmp = tmp -> next_host) {
         if (requesting_client_fd == tmp -> fd) {
@@ -170,9 +173,10 @@ void server__handle_broadcast(char msg[], int requesting_client_fd) {
     cse4589_print_and_log("msg from:%s, to:255.255.255.255\n[msg]:%s\n", from_client ->ip, msg);
     cse4589_print_and_log("[RELAYED:END]\n");
     sendCommand(from_client -> fd, "SUCCESSBROADCAST\n");
+    return 1;
 }
 
-void server__block_or_unblock(char command[], bool is_a_block, int requesting_client_fd) {
+int server__block_or_unblock(char command[], bool is_a_block, int requesting_client_fd) {
     char client_ip[500], client_port[500];;
     if (is_a_block) {
         sscanf(command, "BLOCK %s %s\n", client_ip, client_port);
@@ -237,10 +241,11 @@ void server__block_or_unblock(char command[], bool is_a_block, int requesting_cl
             sendCommand(requesting_client_fd, "ERRORUNBLOCK\n");
         }
     }
+    return 1;
 }
 
 /***  PRINT BLOCKED ***/
-void server__print_blocked(char blocker_ip_addr[]) {
+int server__print_blocked(char blocker_ip_addr[]) {
     struct host * tmp = clients;
     for (;tmp != NULL;tmp = tmp -> next_host) {
         if (strstr(blocker_ip_addr, tmp ->ip) != NULL) {
@@ -263,10 +268,11 @@ void server__print_blocked(char blocker_ip_addr[]) {
     }
 
     cse4589_print_and_log("[BLOCKED:END]\n");
+    return 1;
 }
 
 /** SERVER HANDLE LOGOUT REQUEST FROM CLIENT **/
-void server__handle_logout(int requesting_client_fd) {
+int server__handle_logout(int requesting_client_fd) {
     struct host * tmp = clients;
     for (;tmp != NULL;tmp = tmp -> next_host) {
         if (tmp -> fd == requesting_client_fd) {
@@ -278,10 +284,11 @@ void server__handle_logout(int requesting_client_fd) {
     if (tmp == NULL) {
         sendCommand(requesting_client_fd, "ERRORLOGOUT\n");
     }
+    return 1;
 }
 
 //server handling the request too exit the client
-void exitServer(int requesting_client_fd) {
+int exitServer(int requesting_client_fd) {
     struct host * tmp = clients;
     if (tmp -> fd == requesting_client_fd) {
         clients = clients -> next_host;
@@ -295,4 +302,5 @@ void exitServer(int requesting_client_fd) {
             }
         }
     }
+    return 1;
 }

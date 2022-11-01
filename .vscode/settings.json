@@ -4,6 +4,7 @@
         "string.h": "c",
         "structs.h": "c",
         "universalmethods.h": "c",
-        "netdb.h": "c"
+        "netdb.h": "c",
+        "send.h": "c"
     }
 }

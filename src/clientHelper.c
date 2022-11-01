@@ -129,18 +129,14 @@ int loginClient(char server_ip[], char server_port[]) {
     sendCommand(server -> fd, msg);
 
     // Now we have a server_fd. We add it to he master list of fds along with stdin.
-    fd_set master; // master file descriptor list
-    FD_ZERO( & master); // clear the master and temp sets
-    FD_SET(server -> fd, & master); // Add server->fd to the master list
-    FD_SET(STDIN, & master); // Add STDIN to the master list
+    fd_set master; 
+    FD_ZERO( & master);
+    FD_SET(server -> fd, & master);
+    FD_SET(STDIN, & master);
     FD_SET(myhost -> fd, & master);
-    int fdmax = server -> fd > STDIN ? server -> fd : STDIN; // maximum file descriptor number. initialised to listening    
+    int fdmax = server -> fd > STDIN ? server -> fd : STDIN;
     fdmax = fdmax > myhost -> fd ? fdmax : myhost -> fd;
-    // variable initialisations
-    char data_buffer[500*200]; // buffer for client data
     int fd;
-    struct sockaddr_storage new_peer_addr; // client address
-    socklen_t addrlen = sizeof new_peer_addr;
 
     // main loop
     while (myhost -> loggedIn) {
@@ -165,6 +161,7 @@ int loginClient(char server_ip[], char server_port[]) {
                 }
                 else if (fd == server -> fd) {
                     // handle data from the server
+                    char data_buffer[500*200]; 
                     int dataRcvd = recv(fd, data_buffer, sizeof data_buffer, 0);
                     if (dataRcvd <= 0) {
                         close(fd); // Close the connection
@@ -185,7 +182,7 @@ int loginClient(char server_ip[], char server_port[]) {
 }
 
 // refreshing the client list
-void clientRefreshClientList(char clientListString[]) {
+int clientRefreshClientList(char clientListString[]) {
     char * received = strstr(clientListString, "RECEIVE");
     int rcvi = received - clientListString, cmdi = 0;
     char command[500];
@@ -238,10 +235,11 @@ void clientRefreshClientList(char clientListString[]) {
     } else {
         exCommandClient("SUCCESSLOGIN");
     }
+    return 1;
 }
 
 /** CLIENT SEND MESSAGE **/
-void client__send(char command[]) {
+int client__send(char command[]) {
     char client_ip[500];
     int cmdi = 5;
     int ipi = 0;
@@ -269,6 +267,7 @@ void client__send(char command[]) {
         cse4589_print_and_log("[SEND:ERROR]\n");
         cse4589_print_and_log("[SEND:END]\n");
     }
+    return 1;
 }
 
 /** CLIENT RECEIVE MESSAGE **/
