@@ -72,21 +72,8 @@ void loginHandleServer(char client_ip[], char client_port[], char client_hostnam
     }
 
     strcat(returnMsg, "ENDREFRESH\n");
-    struct message * tmp_message = requesting_client -> queued_messages;
     char receive[1500];
-
-    for (;tmp_message != NULL;tmp_message = tmp_message -> next_message) {
-        requesting_client -> recvMsgCount++;
-        sprintf(receive, "RECEIVE %s %s    ", tmp_message -> from_client -> ip, tmp_message -> text);
-        strcat(returnMsg, receive);
-        if (!tmp_message -> is_broadcast) {
-            cse4589_print_and_log("[RELAYED:SUCCESS]\n");
-            cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", tmp_message -> from_client -> ip, requesting_client -> ip, tmp_message -> text);
-            cse4589_print_and_log("[RELAYED:END]\n");
-        }
-    }
     sendCommand(requesting_client_fd, returnMsg);
-    requesting_client -> queued_messages = tmp_message;
 }
 //server handling the request to refresh the client
 void serverHandleRefresh(int requesting_client_fd) {
@@ -145,20 +132,6 @@ void server__handle_send(char client_ip[], char msg[], int requesting_client_fd)
         cse4589_print_and_log("[RELAYED:SUCCESS]\n");
         cse4589_print_and_log("msg from:%s, to:%s\n[msg]:%s\n", from_client -> ip, to_client -> ip, msg);
         cse4589_print_and_log("[RELAYED:END]\n");
-    } else {
-        struct message * new_message = malloc(sizeof(struct message));
-        memcpy(new_message -> text, msg, sizeof(new_message -> text));
-        new_message -> from_client = from_client;
-        new_message -> is_broadcast = false;
-        if (to_client -> queued_messages == NULL) {
-            to_client -> queued_messages = new_message;
-        } else {
-            struct message * tmp_message = to_client -> queued_messages;
-            for (;tmp_message -> next_message != NULL;tmp_message -> next_message = new_message) {
-                tmp_message = tmp_message -> next_message;
-            }
-            tmp_message -> next_message = new_message; 
-        }
     }
 
 }
