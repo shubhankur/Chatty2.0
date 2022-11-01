@@ -57,17 +57,17 @@ int exCommandServer(char command[], int requesting_client_fd) {
     if(command2[len-1] == '\n' ){
         command2[len-1]=0;
     }
-    if (strcmp(command, "STATISTICS") == 0) {
+    if (strcmp(command2, "STATISTICS") == 0) {
         serverPrintStatistics();
-    } else if (strcmp(command, "BLOCKED") == 0) {
+    } else if (strcmp(command2, "BLOCKED") == 0) {
         char client_ip[500];
         sscanf(command, "BLOCKED %s", client_ip);
         server__print_blocked(client_ip);
-    } else if (strcmp(command, "LOGIN") == 0) {
+    } else if (strcmp(command2, "LOGIN") == 0) {
         char client_hostname[500], client_port[500], client_ip[500];
         sscanf(command, "LOGIN %s %s %s", client_ip, client_port, client_hostname);
         loginHandleServer(client_ip, client_port, client_hostname, requesting_client_fd);
-    } else if (strcmp(command, "BROADCAST") == 0) {
+    } else if (strcmp(command2, "BROADCAST") == 0) {
         char message[500*200];
         int cmdi = 10;
         int msgi = 0;
@@ -78,9 +78,9 @@ int exCommandServer(char command[], int requesting_client_fd) {
         }
         message[msgi - 1] = '\0';
         server__handle_broadcast(message, requesting_client_fd);
-    } else if (strcmp(command, "REFRESH") == 0) {
+    } else if (strcmp(command2, "REFRESH") == 0) {
         serverHandleRefresh(requesting_client_fd);
-    } else if (strcmp(command, "SEND") == 0) {
+    } else if (strcmp(command2, "SEND") == 0) {
         char client_ip[500], message[500];
         int cmdi = 5;
         int ipi = 0;
@@ -99,13 +99,13 @@ int exCommandServer(char command[], int requesting_client_fd) {
         }
         message[msgi - 1] = '\0'; // Remove new line
         server__handle_send(client_ip, message, requesting_client_fd);
-    } else if (strcmp(command, "UNBLOCK") == 0) {
+    } else if (strcmp(command2, "UNBLOCK") == 0) {
         server__block_or_unblock(command, false, requesting_client_fd);
-    } else if (strcmp(command, "BLOCK") == 0) {
+    } else if (strcmp(command2, "BLOCK") == 0) {
         server__block_or_unblock(command, true, requesting_client_fd);
-    } else if (strcmp(command, "LOGOUT") == 0) {
+    } else if (strcmp(command2, "LOGOUT") == 0) {
         server__handle_logout(requesting_client_fd);
-    }else if (strcmp(command, "EXIT") == 0) {
+    }else if (strcmp(command2, "EXIT") == 0) {
         exitServer(requesting_client_fd);
     }
     fflush(stdout);
@@ -119,38 +119,38 @@ int exCommandClient(char command[]) {
     if(command2[len-1] == '\n' ){
         command2[len-1]=0;
     }
-    if (strcmp(command, "SUCCESSLOGIN") == 0) {
+    if (strcmp(command2, "SUCCESSLOGIN") == 0) {
         cse4589_print_and_log("[LOGIN:SUCCESS]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
-    } else if (strcmp(command, "ERRORLOGIN") == 0) {
+    } else if (strcmp(command2, "ERRORLOGIN") == 0) {
         cse4589_print_and_log("[LOGIN:ERROR]\n");
         cse4589_print_and_log("[LOGIN:END]\n");
-    }  else if (strcmp(command, "SUCCESSLOGOUT") == 0) {
+    }  else if (strcmp(command2, "SUCCESSLOGOUT") == 0) {
         myhost-> loggedIn = false;
         cse4589_print_and_log("[LOGOUT:SUCCESS]\n");
         cse4589_print_and_log("[LOGOUT:END]\n");
-    } else if (strcmp(command, "ERRORLOGOUT") == 0) {
+    } else if (strcmp(command2, "ERRORLOGOUT") == 0) {
         cse4589_print_and_log("[LOGOUT:ERROR]\n");
         cse4589_print_and_log("[LOGOUT:END]\n");
-    } else if (strcmp(command, "SUCCESSBROADCAST") == 0) {
+    } else if (strcmp(command2, "SUCCESSBROADCAST") == 0) {
         cse4589_print_and_log("[BROADCAST:SUCCESS]\n");
         cse4589_print_and_log("[BROADCAST:END]\n");
-    } else if (strcmp(command, "SUCCESSUNBLOCK") == 0) {
+    } else if (strcmp(command2, "SUCCESSUNBLOCK") == 0) {
         cse4589_print_and_log("[UNBLOCK:SUCCESS]\n");
         cse4589_print_and_log("[UNBLOCK:END]\n");
-    } else if (strcmp(command, "SUCCESSBLOCK") == 0) {
+    } else if (strcmp(command2, "SUCCESSBLOCK") == 0) {
         cse4589_print_and_log("[BLOCK:SUCCESS]\n");
         cse4589_print_and_log("[BLOCK:END]\n");
-    } else if (strcmp(command, "ERRORUNBLOCK") == 0) {
+    } else if (strcmp(command2, "ERRORUNBLOCK") == 0) {
         cse4589_print_and_log("[UNBLOCK:ERROR]\n");
         cse4589_print_and_log("[UNBLOCK:END]\n");
-    } else if (strcmp(command, "ERRORBLOCK") == 0) {
+    } else if (strcmp(command2, "ERRORBLOCK") == 0) {
         cse4589_print_and_log("[BLOCK:ERROR]\n");
         cse4589_print_and_log("[BLOCK:END]\n");
-    } else if (strcmp(command, "SUCCESSSEND") == 0) {
+    } else if (strcmp(command2, "SUCCESSSEND") == 0) {
         cse4589_print_and_log("[SEND:SUCCESS]\n");
         cse4589_print_and_log("[SEND:END]\n");
-    } else if (strcmp(command, "LOGIN") == 0) { // takes two arguments server ip and server port
+    } else if (strcmp(command2, "LOGIN") == 0) { // takes two arguments server ip and server port
         char server_ip[500], server_port[500];
         int cmdi = 6;
         int ipi = 0;
@@ -170,23 +170,23 @@ int exCommandClient(char command[]) {
         }
         server_port[pi - 1] = '\0'; // REMOVE THE NEW LINE
         loginClient(server_ip, server_port);
-    } else if (strcmp(command, "REFRESHRESPONSE") == 0) {
+    } else if (strcmp(command2, "REFRESHRESPONSE") == 0) {
         clientRefreshClientList(command);
-    } else if (strcmp(command, "REFRESH") == 0) {
+    } else if (strcmp(command2, "REFRESH") == 0) {
         if (myhost -> loggedIn) {
             sendCommand(server -> fd, "REFRESH\n");
         } else {
             cse4589_print_and_log("[REFRESH:ERROR]\n");
             cse4589_print_and_log("[REFRESH:END]\n");
         }
-    } else if (strcmp(command, "SEND") == 0) {
+    } else if (strcmp(command2, "SEND") == 0) {
         if (myhost -> loggedIn) {
             client__send(command);
         } else {
             cse4589_print_and_log("[SEND:ERROR]\n");
             cse4589_print_and_log("[SEND:END]\n");
         }
-    } else if (strcmp(command, "RECEIVE") == 0) {
+    } else if (strcmp(command2, "RECEIVE") == 0) {
         char client_ip[500], message[500*200];
         int cmdi = 8;
         int ipi = 0;
@@ -206,35 +206,35 @@ int exCommandClient(char command[]) {
         }
         message[msgi - 1] = '\0'; // REMOVE THE NEW LINE
         client__handle_receive(client_ip, message);
-    } else if (strcmp(command, "BROADCAST") == 0) {
+    } else if (strcmp(command2, "BROADCAST") == 0) {
         if (myhost-> loggedIn) {
             sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[BROADCAST:ERROR]\n");
             cse4589_print_and_log("[BROADCAST:END]\n");
         }
-    } else if (strcmp(command, "UNBLOCK") == 0) {
+    } else if (strcmp(command2, "UNBLOCK") == 0) {
         if (myhost-> loggedIn) {
             client__block_or_unblock(command, false);
         } else {
             cse4589_print_and_log("[UNBLOCK:ERROR]\n");
             cse4589_print_and_log("[UNBLOCK:END]\n");
         }
-    } else if (strcmp(command, "BLOCK") == 0) {
+    } else if (strcmp(command2, "BLOCK") == 0) {
         if (myhost-> loggedIn) {
             client__block_or_unblock(command, true);
         } else {
             cse4589_print_and_log("[BLOCK:ERROR]\n");
             cse4589_print_and_log("[BLOCK:END]\n");
         }
-    } else if (strcmp(command, "LOGOUT") == 0) {
+    } else if (strcmp(command2, "LOGOUT") == 0) {
         if (myhost-> loggedIn) {
             sendCommand(server -> fd, command);
         } else {
             cse4589_print_and_log("[LOGOUT:ERROR]\n");
             cse4589_print_and_log("[LOGOUT:END]\n");
         }
-    }else if (strcmp(command, "EXIT") == 0) {
+    }else if (strcmp(command2, "EXIT") == 0) {
         exitClient();
     }
     fflush(stdout);
