@@ -19,7 +19,9 @@
 //initialize the server
 void initializeServer() {
     int listening = 0;
-    struct addrinfo hints, * localhost_ai, * temp_ai;
+    struct addrinfo hints;
+    struct addrinfo * localhost_ai;
+    struct addrinfo * temp_ai;
     memset( & hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -67,7 +69,7 @@ void initializeServer() {
     int fdmax = listening > STDIN ? listening : STDIN;   
 
     // main loop
-    while (1) {
+    for (;;) {
         fd_set cp_master = master; // make a copy of master set
         int socketCount = select(fdmax + 1, & cp_master, NULL, NULL, NULL) ; // determine status of one or more sockets to perfrom i/o in sync
         if (socketCount == -1) {

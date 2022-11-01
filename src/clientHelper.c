@@ -24,7 +24,9 @@ bool connectClientServer(char server_ip[], char server_port[]) {
     memcpy(server -> ip, server_ip, sizeof(server -> ip));
     memcpy(server -> port, server_port, sizeof(server -> port));
     int server_fd = 0;
-    struct addrinfo hints, * server_ai, * temp_ai;
+    struct addrinfo hints;
+    struct addrinfo * server_ai;
+    struct addrinfo * temp_ai;
 
     // create a socket and bind
     memset( & hints, 0, sizeof hints);

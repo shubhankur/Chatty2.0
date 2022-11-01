@@ -40,7 +40,8 @@ void initialize(bool checkServer, char * port) {
 int setHostNameAndIp(struct host * h) {
     char myIP[16];
     unsigned int myPort;
-    struct sockaddr_in server_addr, my_addr;
+    struct sockaddr_in server_addr;
+    struct sockaddr_in my_addr;
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     struct hostent *he;
