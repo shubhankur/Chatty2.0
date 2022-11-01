@@ -254,7 +254,7 @@ int client__send(char command[]) {
     if (result==0) {
         cse4589_print_and_log("[SEND:ERROR]\n");
         cse4589_print_and_log("[SEND:END]\n");
-        return;
+        return -1;
     }
     struct host * temp = clients;
     for (;temp != NULL;temp = temp -> next_host) {
