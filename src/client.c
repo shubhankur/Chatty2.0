@@ -33,7 +33,9 @@ void initializeClient() {
 /*** initialize client listening ***/
 int registerClientLIstener() {
     int listening = 0;
-    struct addrinfo hints, * localhost_ai, * temp_ai;
+    struct addrinfo hints;
+    struct addrinfo * localhost_ai;
+    struct addrinfo * temp_ai;
 
     // create a socket and bind
     memset( & hints, 0, sizeof hints);
@@ -47,7 +49,7 @@ int registerClientLIstener() {
     temp_ai = localhost_ai;
     while (temp_ai != NULL) {
         listening = socket(temp_ai -> ai_family, temp_ai -> ai_socktype, temp_ai -> ai_protocol);
-        if (listening < 0) {
+        if (listening == -1) {
             temp_ai = temp_ai -> ai_next;
             continue;
         }
@@ -62,12 +64,7 @@ int registerClientLIstener() {
     }
 
     // exiting
-    if (temp_ai == NULL) {
-        exit(EXIT_FAILURE);
-    }
-
-    // listening
-    if (listen(listening, 10) == -1) {
+    if (temp_ai == NULL || listen(listening, 10) == -1) {
         exit(EXIT_FAILURE);
     }
 
