@@ -286,8 +286,6 @@ void client__block_or_unblock(char command[], bool is_a_block) {
     } else {
         sscanf(command, "UNBLOCK %s\n", client_ip);
     }
-
-    // To check if its in the LIST
     struct host * temp = clients;
     for (;temp != NULL;temp = temp -> next_host) {
         if (strstr(client_ip, temp -> ip) != NULL) {
